@@ -1,0 +1,11 @@
+name = "seed_bayes_lab"
+version = "0.1.0"
+defaultTargets = ["SeedBayes"]
+
+[[lean_lib]]
+name = "SeedBayes"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.32.0"

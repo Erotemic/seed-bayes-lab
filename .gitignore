@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+.lean/
+.lake/
+lake-manifest.json
+*.olean
+*.ilean
+*.trace
+.DS_Store
