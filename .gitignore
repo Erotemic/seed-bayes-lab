@@ -13,3 +13,4 @@ lake-manifest.json
 
 # Local MAGNET static report (generated)
 theory/report.json
+*.egg-info
