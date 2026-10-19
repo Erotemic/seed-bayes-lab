@@ -143,18 +143,6 @@ class DialSensitivity:
     undefined_positions: int
 
     @property
-    def left_posterior_change(self) -> float | None:
-        if self.left_posterior is None or self.current_posterior is None:
-            return None
-        return self.left_posterior - self.current_posterior
-
-    @property
-    def right_posterior_change(self) -> float | None:
-        if self.right_posterior is None or self.current_posterior is None:
-            return None
-        return self.right_posterior - self.current_posterior
-
-    @property
     def current_direction(self) -> str:
         return direction(self.current_delta)
 
@@ -188,8 +176,12 @@ class DialSensitivity:
 def analyze_slider(values: Mapping[str, float | int], key: str) -> DialSensitivity:
     """Enumerate the exact UI lattice, including both endpoints.
 
-    Detect interior reversals, not merely endpoint comparisons. If evidence has
-    zero probability, mark that setting undefined and exclude it from extrema.
+    The MIN/MAX deltas are evidence updates at those *fixed* settings:
+        P(B | E, slider=end) - P(B | slider=end)
+    (or the analogous publication-conditioned delta in the search tab).
+    Changing this slider's current position must not change either endpoint;
+    changing any other slider may change both. Detect interior reversals as
+    well. Undefined conditioning is excluded from extrema, never set to zero.
     """
     spec = SLIDER_SPECS[key]
     evaluator = bayes_delta if spec.group == "bayes" else search_delta

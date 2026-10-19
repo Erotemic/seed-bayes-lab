@@ -57,8 +57,9 @@ BAYES_QUANTITIES = (
           "Hypothetical modeling inputs, not measured frequencies from the historical record."),
     Entry("Δupdate", "Posterior − prior, P(B | E) − P(B), in percentage points.",
           "The can-reverse indicator scans the sign of this quantity."),
-    Entry("Δmove(x)", "P(B | E; slider=x) − P(B | E; current sliders), in percentage points.",
-          "Shown as the arrow and number at each slider endpoint. Other sliders stay fixed."),
+    Entry("Δendpoint(x)", "P(B | E; x=end) − P(B; x=end), in percentage points.",
+          "This control is fixed to one endpoint while all others remain at their current values. "
+          "The result is independent of this control's current position."),
 )
 
 SEARCH_EVENTS = (
@@ -93,9 +94,10 @@ SEARCH_QUANTITIES = (
           "A successfully planted backdoor always publishes in this toy model."),
     Entry("Δupdate (search)", "P(B | J, T) − P(B | J), in percentage points.",
           "This is a method-observation update, NOT an update from E."),
-    Entry("Δmove (search)",
-          "P(B | J, T; slider=x) − P(B | J, T; current sliders).",
-          "Shown at slider endpoints; if the conditioning probability is zero it is undefined."),
+    Entry("Δendpoint (search)",
+          "P(B | J,T; x=end) − P(B | J; x=end).",
+          "Fix this dial to its endpoint; all other dials stay at their current values. "
+          "Undefined if conditioning has probability zero."),
 )
 
 BAYES_PARAMETERS = (

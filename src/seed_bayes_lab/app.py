@@ -59,18 +59,18 @@ with st.expander("Full evidence definition, limitations and sources"):
 
 
 def _endpoint_card(title: str, position: float | int, posterior: float | None,
-                   posterior_change: float | None, after_label: str, align: str) -> str:
-    """Compact, icon-led change in posterior from the current dial settings."""
-    move = direction(posterior_change)
+                   evidence_delta: float | None, after_label: str, align: str) -> str:
+    """Evidence update at a fixed endpoint, not change from the current dial."""
+    move = direction(evidence_delta)
     icon = {"decrease": "↘", "increase": "↗", "unchanged": "→",
             "undefined": "?"}[move]
-    formatted = format_delta_pp(posterior_change)
+    formatted = format_delta_pp(evidence_delta)
     number = formatted.removeprefix("↘ ").removeprefix("↗ ")
     result = "undefined" if posterior is None else f"{posterior:.2%}"
     return (
         f'<div class="endpoint-card {align} {move}" role="group" '
-        f'aria-label="{title} {position}; {formatted}; '
-        f'{after_label} at endpoint {result}">'
+        f'aria-label="{title} {position}; evidence update at endpoint (posterior minus prior): '
+        f'{formatted}; {after_label} at endpoint {result}">'
         f'<div class="endpoint-head">{title} {position}</div>'
         f'<div class="endpoint-main"><span class="endpoint-icon" aria-hidden="true">'
         f'{icon}</span><span class="endpoint-number">{number}</span></div>'
@@ -87,11 +87,11 @@ def sensitivity_slider(key: str) -> float | int:
     left, right = st.columns(2)
     with left:
         st.markdown(_endpoint_card("MIN", spec.minimum, sens.left_posterior,
-                                   sens.left_posterior_change, after_label, "left"),
+                                   sens.left_delta, after_label, "left"),
                     unsafe_allow_html=True)
     with right:
         st.markdown(_endpoint_card("MAX", spec.maximum, sens.right_posterior,
-                                   sens.right_posterior_change, after_label, "right"),
+                                   sens.right_delta, after_label, "right"),
                     unsafe_allow_html=True)
     st.caption(
         f"**{sens.status}** · Full evidence-update Δ range: "
@@ -123,7 +123,7 @@ with bayes:
     st.subheader("Three-world finite model")
     st.caption(EVIDENCE_LIKELIHOOD_NOTE)
     st.caption("B denotes a deliberately planted backdoor; I denotes intent to plant one.")
-    st.caption("Endpoint arrows: change in P(B | E) from the CURRENT posterior when moving only that slider to MIN/MAX. The 'can reverse' indicator separately scans Δupdate = P(B | E) − P(B). All changes are in percentage points.")
+    st.caption("Each endpoint arrow shows the evidence update Δ = P(B | E) − P(B) if you set THAT slider to MIN/MAX, holding the others fixed. Its own endpoint values remain fixed when you move it; moving other sliders can change them. Values are percentage points.")
     st.markdown("Worlds: **honest**, **attempted but failed**, **successfully planted backdoor**.")
     left, right = st.columns([1, 2], gap="large")
     with left:
@@ -181,7 +181,7 @@ with search:
         alpha = sensitivity_slider("prior_restricted")
         rho = sensitivity_slider("publish_failed")
         st.caption("P(publish | successful attempt) is fixed at 100% in this toy model.")
-    st.caption("Endpoint arrows here change P(B | published, T) relative to its CURRENT value. Reversal still concerns Δupdate = P(B | published, T) − P(B | published). This conditions on T, not the historical observation E.")
+    st.caption("Each endpoint arrow shows Δ = P(B | published, T) − P(B | published) with that slider fixed to MIN/MAX. Moving the slider itself does not change its endpoint badges. This conditions on T, not historical evidence E.")
     show_flip_summary(tuple(spec.key for spec in SEARCH_SLIDERS))
     st_t = planted_success(rarity, t_bits, compute, know_t)
     st_u = planted_success(rarity, u_bits, compute, know_u)
@@ -229,7 +229,7 @@ with glossary:
     st.markdown("#### The eight search-model input dials")
     _show_parameters(SEARCH_PARAMETERS)
     st.markdown("### How to read the slider-end icons")
-    st.markdown("**↘ decrease**, **↗ increase**, **→ unchanged**, **? undefined**. The icon at MIN or MAX tells you the difference in the *posterior itself*, relative to the current setting, if you move only that slider to that endpoint. The nearby percentage is the resulting posterior. The separate **CAN REVERSE** indicator concerns the sign of the **evidence update** (posterior minus prior), which is a different quantity. This difference matters especially when a dial also changes P(B).")
+    st.markdown("**↘ evidence decreases backdoor probability**, **↗ evidence increases it**, **→ unchanged**, **? undefined**. Each icon shows **Δupdate = posterior − prior**, evaluated with that dial pinned at MIN or MAX, and all other dials at their current positions. This is **not** the movement relative to the current posterior. Therefore a slider cannot change its own endpoint badges, but changing other sliders may. The nearby percentage is the resulting posterior. **CAN REVERSE** checks every selectable position, not just MIN/MAX.")
 
 
 with assumptions:

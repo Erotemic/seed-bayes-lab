@@ -48,4 +48,4 @@ def test_html_glossary_is_static_searchable_and_accessible(tmp_path: Path):
     assert '1997' in html
     assert 'scope="row"' in html
     assert 'Read the full observation, limitations and sources' in html
-    assert 'Δmove' in html
+    assert 'Δendpoint' in html

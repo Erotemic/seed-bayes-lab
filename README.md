@@ -72,26 +72,26 @@ stronger method-observation T, and report before/after probabilities using
 `P(B)` and `P(B | E)` (or `P(B | published)` and
 `P(B | published,T)` in the search tab).
 
-The **icon at each slider endpoint** predicts the posterior change if that
-single slider moves to its minimum or maximum while every other input remains
-fixed. For example, in the first tab it shows
+The **icon at each slider endpoint** shows the evidence update at that
+fixed endpoint, not movement relative to the slider's live setting. In the
+Bayes tab the endpoint delta is
 
-`Δmove = P(B | E; endpoint) - P(B | E; current)`
+`Δendpoint = P(B | E; x=endpoint) - P(B; x=endpoint)`
 
-in **percentage points**. Below the icon is the actual endpoint `P(B | E)`.
-An upward arrow means increased posterior, a downward arrow means decreased
-posterior, and a neutral arrow means no numerical change. Undefined
-conditioning is marked with a question mark. The search tab analogously
-shows changes to `P(B | published,T)`.
+in **percentage points**; the search tab uses
+`P(B | J,T; x=endpoint) - P(B | J; x=endpoint)`.
+All other sliders remain at their current values. Consequently, moving a
+slider does **not** change its own MIN/MAX badges; changing *other*
+sliders can. Below the signed arrow is the posterior at that endpoint.
+An upward red arrow means evidence increases the backdoor probability,
+a downward green arrow means it decreases it, neutral means no update,
+and a question mark means conditioning is undefined.
 
-The separate **CAN REVERSE** label refers instead to the evidence-update
-sign `Δupdate = posterior - prior`, evaluated across every selectable slider
-position (including interior positions). Its full range is displayed below
-the slider. This distinction is intentional: changing `P(I)` can increase
-`P(B | E)` yet leave `P(B | E) < P(B)` throughout. Equality is not a
-strict reversal. Values for which conditioning is impossible are undefined,
-not unchanged. The glossary tab specifies `E`, `T`, `B`, `I`, publication,
-and all dials precisely; `E` and `T` are **different observations**.
+The **CAN REVERSE** indicator scans the same evidence-update delta at
+*all* positions (including interior ones), and reports whether moving this
+dial can change its sign relative to the current configuration. Equality
+is not a strict reversal. The glossary defines all events and parameters.
+Evidence E is not the same as search-model observation T.
 
 The default `P(I)=0.50` is a **symmetric demonstration prior**, not a factual
 assessment or a claim that maximum entropy automatically represents ignorance.

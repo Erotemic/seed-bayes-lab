@@ -182,21 +182,25 @@ reported as undefined and never counted as equality. Small floating-point
 differences below `1e-13` are treated as numerically indistinguishable from
 zero when classifying the sign.
 
-The **left and right endpoint icons** instead show the *movement in the
-posterior itself relative to the current posterior*, in percentage points:
+The **left and right endpoint icons** show the *evidence update* at each
+fixed endpoint, in percentage points, NOT posterior movement relative to
+the dial's current position:
 
-- In the Bayes tab: `P(B | E; x=endpoint) - P(B | E; x=current)`.
-- In the search tab: `P(B | J,T; x=endpoint) - P(B | J,T; x=current)`.
+- Bayes tab: `P(B | E; x=endpoint) - P(B; x=endpoint)`.
+- Search tab: `P(B | J,T; x=endpoint) - P(B | J; x=endpoint)`.
 
-A large arrow and signed value indicate the movement; a secondary label shows
-the absolute resulting posterior probability at that endpoint. The
-color/arrow encode increase, decrease, equality or undefined. This differs
-from the *evidence update* `delta(x) = posterior(x) - prior(x)` used for flip
-detection. Both prior and posterior can change when a prior-parameter slider
-moves, so a positive endpoint arrow can coexist with a negative evidence
-update. The full update range reports the smallest/largest evidence update
-across **all** positions, not merely the endpoints. The glossary tab specifies
-all event definitions and conditioning in the two models.
+Other dials are held at their current values when evaluating an endpoint.
+Thus the endpoint arrows for `x` are **invariant** when `x` itself moves,
+but may change when other dials move. Crucially, if the dial changes a
+prior, the prior in the subtraction must also be evaluated at that
+endpoint, not at the current live setting. The small percentage underneath
+is the posterior at that endpoint. Arrows indicate the sign of the
+evidence update, including equality or undefined conditioning.
+
+The **CAN REVERSE** status and full update range scan every selectable
+position of that same evidence-update formula, including interior extrema.
+Equality is not a strict reversal; undefined conditioning is not zero.
+The glossary specifies every event and distinguishes observation E from T.
 
 This sensitivity test is a property of the *current hypothetical model*, not
 historical evidence for or against an actual backdoor.

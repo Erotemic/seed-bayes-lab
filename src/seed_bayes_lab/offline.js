@@ -77,8 +77,7 @@
 
   function sweep(s, spec) {
     const evaluate = spec.group === 'bayes' ? finiteBayes : methodUpdate;
-    const currentResult = evaluate(s);
-    const current = currentResult.delta;
+    const current = evaluate(s).delta;
     let minimum = null, maximum = null;
     let left = null, right = null, leftPosterior = null, rightPosterior = null;
     let undefinedCount = 0;
@@ -110,11 +109,11 @@
       else status = 'Remains unchanged';
     } else if (equality) status = 'Can reach equality, not reverse';
     else status = 'Cannot reverse';
-    const difference = endpoint =>
-      currentResult.after === null || endpoint === null ? null : endpoint - currentResult.after;
+    // Endpoint updates are evaluated with this dial pinned to MIN or MAX.
+    // They cannot depend on the same dial's live position, but may depend on
+    // every other dial. Do NOT subtract the current posterior here.
     return { left, right, leftPosterior, rightPosterior,
-      leftChange: difference(leftPosterior), rightChange: difference(rightPosterior),
-      currentPosterior: currentResult.after, minimum, maximum, undefinedCount, directions,
+      minimum, maximum, undefinedCount, directions,
       current, present, reverse, equality, status };
   }
 
@@ -170,16 +169,16 @@
     }
   }
 
-  function renderExtreme(targetId, edgeLabel, point, posterior, change, group) {
+  function renderExtreme(targetId, edgeLabel, point, posterior, evidenceDelta, group) {
     const element = document.getElementById(targetId);
-    const sign = direction(change);
+    const sign = direction(evidenceDelta);
     const symbol = sign === 'increase' ? '\u2197' : sign === 'decrease' ? '\u2198' :
       sign === 'unchanged' ? '\u2192' : '?';
-    const numeric = change === null ? 'undefined' :
+    const numeric = evidenceDelta === null ? 'undefined' :
       sign === 'unchanged' ? '\u22480 pp' :
-      (change > 0 ? '+' : '\u2212') +
-      (Math.abs(change * 100) < 0.001 ? Math.abs(change * 100).toPrecision(2) :
-       Math.abs(change * 100).toFixed(2)) + ' pp';
+      (evidenceDelta > 0 ? '+' : '\u2212') +
+      (Math.abs(evidenceDelta * 100) < 0.001 ? Math.abs(evidenceDelta * 100).toPrecision(2) :
+       Math.abs(evidenceDelta * 100).toFixed(2)) + ' pp';
     const title = createText('div', 'extreme-label', edgeLabel + ' ' + point);
     const content = createText('div', 'extreme-main', '');
     const icon = createText('span', 'extreme-icon', symbol);
@@ -189,9 +188,9 @@
     const afterName = group === 'bayes' ? 'P(B | E)' : 'P(B | J,T)';
     const detail = createText('div', 'extreme-posterior', afterName + ' ' + percent(posterior));
     element.className = 'dial-extreme ' + sign;
-    element.setAttribute('aria-label', edgeLabel + ' setting ' + point + ', change in ' +
-      afterName + ' from current: ' + formatter(change) + ', endpoint ' +
-      afterName + ': ' + percent(posterior));
+    element.setAttribute('aria-label', edgeLabel + ' setting ' + point +
+      ', evidence update at endpoint (posterior minus prior): ' +
+      formatter(evidenceDelta) + ', endpoint ' + afterName + ': ' + percent(posterior));
     element.replaceChildren(title, content, detail);
   }
 
@@ -206,9 +205,9 @@
         document.getElementById('value-' + spec.key).textContent = isBit ?
           values[spec.key] + ' bits' : Number(values[spec.key]).toFixed(2);
         renderExtreme('left-' + spec.key, 'MIN', spec.min,
-          sensitivity.leftPosterior, sensitivity.leftChange, group);
+          sensitivity.leftPosterior, sensitivity.left, group);
         renderExtreme('right-' + spec.key, 'MAX', spec.max,
-          sensitivity.rightPosterior, sensitivity.rightChange, group);
+          sensitivity.rightPosterior, sensitivity.right, group);
         const status = document.getElementById('status-' + spec.key);
         status.textContent = sensitivity.status;
         status.className = 'dial-status ' + (sensitivity.reverse ? 'flip' :

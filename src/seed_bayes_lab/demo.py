@@ -70,16 +70,19 @@ def _glossary_html() -> str:
         + _glossary_table('Probabilities and search formulas', SEARCH_QUANTITIES)
         + _glossary_table('Eight input dials', SEARCH_PARAMETERS, parameters=True)
         + '<section class="glossary-section"><h3>Reading the visual endpoint indicators</h3>'
-        '<p><strong>↘</strong> means the posterior will decrease from its current '
-        'value if you move this one dial to that endpoint; <strong>↗</strong> '
-        'means increase, <strong>→</strong> means no change, and <strong>?</strong> '
-        'means conditioning is undefined. The nearby percentage is the resulting '
-        'posterior at that endpoint.</p>'
-        '<p><strong>CAN REVERSE</strong> instead checks the sign of the '
-        '<em>evidence update</em>, posterior minus prior, across every position '
-        'of that dial. The endpoint icon and the reversal status deliberately '
-        'measure different quantities: a changed prior can change the posterior '
-        'without reversing the direction of the evidence update.</p></section>'
+        '<p><strong>↘</strong> means the evidence lowers the probability of B at '
+        'that endpoint; <strong>↗</strong> means it raises the probability; '
+        '<strong>→</strong> means no update, and <strong>?</strong> means '
+        'conditioning is undefined. The percentage-point delta at an endpoint '
+        'is <code>P(B | E; x=end) − P(B; x=end)</code> (or '
+        '<code>P(B | J,T; x=end) − P(B | J; x=end)</code> in the search tab), '
+        'with all other sliders held at their current settings. The small '
+        'percentage is the resulting posterior.</p>'
+        '<p>Because the endpoint fixes the dial being examined, moving that '
+        'dial does <strong>not</strong> change its endpoint indicators; '
+        'moving any other dial can. <strong>CAN REVERSE</strong> scans every '
+        'position for a change of sign in this same evidence update, '
+        'including positions between the endpoints.</p></section>'
     )
 
 
@@ -201,7 +204,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <button type="button" id="tab-glossary" role="tab" aria-controls="panel-glossary" aria-selected="false">Notation glossary</button>
 </div>
 <section id="panel-bayes" role="tabpanel" aria-labelledby="tab-bayes">
-<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show how <strong>P(B | E) itself</strong> changes relative to the current posterior if you move that dial to MIN or MAX, leaving others fixed. The separate direction/reversal test refers to <strong>Δupdate = P(B | E) − P(B)</strong>. Both changes are in percentage points.</p>
+<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points.</p>
 <div class="workspace">
 <div class="controls"><h2>Bayesian assumptions</h2><p class="detail">P(I) starts at 0.50 as a <em>symmetric demonstration prior</em>, not as a measured historical probability or a claim of ignorance.</p><div id="bayes-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics">
@@ -214,7 +217,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="chart-panel"><div id="bayes-heatmap" class="chart"></div></div>
 </div></div></section>
 <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden>
-<p class="intro">%%METHOD_OBSERVATION%% In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows measure the change in P(B | published,T) from the current setting. Direction/reversal refers to Δupdate = P(B | published,T) − P(B | published). This is not evidence E.</p>
+<p class="intro">%%METHOD_OBSERVATION%% In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX, holding other dials fixed; the dial's own live position does not affect its endpoint badges. This is not evidence E.</p>
 <div class="workspace">
 <div class="controls"><h2>Search and selection assumptions</h2><p class="detail">Candidate rarity, available choices, computing budget, attack knowledge, and publication policy are separately adjustable hypothetical controls.</p><div id="search-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -226,7 +229,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="caveat">The independent-candidate search model does not capture direct cryptanalytic constructions. At parameter combinations with zero-probability observations, the posterior is <strong>undefined</strong> and is not counted as unchanged.</div>
 </div></div></section>
 <section id="panel-glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden>%%GLOSSARY_HTML%%</section>
-<footer>Endpoint arrows: posterior at that endpoint minus the current posterior, keeping all other controls fixed. "CAN REVERSE" and the update Δ range describe posterior minus prior at each slider setting. Full scans include interior positions; undefined conditioning is not treated as equality. See the notation glossary for every event.</footer>
+<footer>Endpoint arrows: posterior minus prior evaluated at each fixed MIN/MAX setting, with other controls held fixed. A dial cannot change its own endpoint indicators. "CAN REVERSE" and the Δ range scan all positions, including interior settings. Undefined conditioning is not treated as equality. See the notation glossary for every event.</footer>
 </main>
 <script>%%PLOTLY_JS%%</script>
 <script>%%OFFLINE_JS%%</script>
