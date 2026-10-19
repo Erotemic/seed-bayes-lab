@@ -92,7 +92,15 @@ class MethodUpdate:
     def delta(self) -> float | None:
         if self.before is None or self.after is None:
             return None
-        return self.after - self.before
+        # Algebraically identical to after - before, but avoids cancellation
+        # when the evidence only changes the posterior by a tiny amount.
+        a = self.prior_restricted
+        rho = self.publish_if_failed
+        pt = publish_probability(self.restricted_success, rho)
+        return (
+            rho * (1.0 - a) * (self.restricted_success - self.unrestricted_success)
+            / (pt * self.probability_published)
+        )
 
     @property
     def method_probability_given_published(self) -> float | None:

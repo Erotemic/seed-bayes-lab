@@ -6,7 +6,7 @@ from collections.abc import MutableMapping
 from typing import Any
 
 DEFAULT_ASSUMPTIONS: dict[str, float | int] = {
-    "prior_intent": 0.20,
+    "prior_intent": 0.50,
     "success_given_intent": 0.30,
     "likelihood_honest": 0.80,
     "likelihood_failed": 0.60,
