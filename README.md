@@ -20,7 +20,8 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
 - `src/seed_bayes_lab/app.py`: Streamlit explorer with editable assumptions, explicit
   recovered-evidence description, source links, and reset-all button.
 - `src/seed_bayes_lab/sensitivity.py`: complete one-dial-at-a-time directional
-  scans, including flip detection, endpoint effects, and interior extrema.
+  scans, including flip detection, fixed endpoint effects, break-even roots and
+  equality intervals.
 - `src/seed_bayes_lab/offline.js`: equivalent JavaScript calculations for the
   full offline HTML application, with parity tests against Python.
 - `src/seed_bayes_lab/evidence.py`: shared observed-evidence definition.
@@ -28,8 +29,9 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
   events, all thirteen input meanings, and display notation for both interfaces.
 - `src/seed_bayes_lab/ui_state.py`: centralized slider defaults and reset behavior.
 - `examples/interactive_demo.html`: generated, self-contained offline explorer
-  with all thirteen sliders, icon-led endpoint effects, a detailed notation
-  glossary, live charts, reset, and direction-reversal hints.
+  with all thirteen sliders, icon-led endpoint effects, purple break-even
+  ticks/segments, a detailed notation glossary, live charts, reset, and
+  direction-reversal hints.
 - `SeedBayes/Finite.lean`: finite Bayesian identities, odds form, factorization,
   likelihood-ratio criterion for a decreasing posterior, and 100%-intent case.
 - `SeedBayes/Selection.lean`: when observing the more constrained method must
@@ -87,11 +89,32 @@ An upward red arrow means evidence increases the backdoor probability,
 a downward green arrow means it decreases it, neutral means no update,
 and a question mark means conditioning is undefined.
 
+A **purple tick on a slider** marks a break-even value where the evidence
+update equals zero (posterior equals prior). A **purple segment** marks a
+range of such values. The tick is calculated with every other dial fixed;
+changing the marked dial itself leaves its tick in place, while changing a
+different dial can move the tick. The offline HTML draws ticks directly over
+the slider tracks. Because Streamlit's native slider does not expose custom
+tick positions, its version draws an aligned companion ruler immediately
+beneath the native slider.
+
+For roots between slider steps, the tick shows an **approximately equal**
+interpolated value; it may not be possible to select that exact value with
+the discrete slider. A missing tick means no zero was detected within the
+range. Undefined conditioning is not equality. Roots are found using the
+algebraic numerator of the probability update, so an extremely small but
+nonzero update is not falsely labeled equal merely because it rounds to
+"≈0 pp". In search scenarios where finite-precision arithmetic saturates
+at probability 1, the calculation preserves the strict sign implied by
+unequal search budgets rather than drawing a false equality interval. The
+numerical scan could still miss an interior tangency without sign change.
+
 The **CAN REVERSE** indicator scans the same evidence-update delta at
-*all* positions (including interior ones), and reports whether moving this
-dial can change its sign relative to the current configuration. Equality
-is not a strict reversal. The glossary defines all events and parameters.
-Evidence E is not the same as search-model observation T.
+*all selectable* positions (including interior ones), and reports whether
+moving this dial can change the sign relative to its current configuration.
+An interpolated zero between steps need not be selectable. Equality is not
+a strict reversal. The glossary defines all events and parameters. Evidence
+E is not the same as search-model observation T.
 
 The default `P(I)=0.50` is a **symmetric demonstration prior**, not a factual
 assessment or a claim that maximum entropy automatically represents ignorance.

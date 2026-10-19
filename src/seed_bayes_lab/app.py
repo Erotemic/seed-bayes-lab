@@ -7,7 +7,7 @@ import streamlit as st
 from seed_bayes_lab.model import Likelihoods, Prior, update
 from seed_bayes_lab.sensitivity import (
     SLIDER_SPECS, BAYES_SLIDERS, SEARCH_SLIDERS,
-    analyze_slider, format_delta_pp, direction,
+    analyze_slider, format_delta_pp, direction, BreakEvenRegion,
 )
 from seed_bayes_lab.evidence import (
     EVIDENCE_TITLE, EVIDENCE_SHORT, EVIDENCE_OBSERVATION, EVIDENCE_LIMITS,
@@ -40,6 +40,13 @@ st.markdown("""
 .endpoint-card.increase .endpoint-icon{background:#fae5e0;color:#a54832}
 .endpoint-number{font-size:1.0rem;font-variant-numeric:tabular-nums;font-weight:700}
 .endpoint-posterior{font-size:.72rem;opacity:.72;font-variant-numeric:tabular-nums}
+.break-even-companion{height:34px;position:relative;margin:-2px 12px 5px}
+.break-even-companion-rail{position:absolute;top:5px;left:0;right:0;height:4px;background:#dee1e9;border-radius:4px}
+.break-even-companion-bar{position:absolute;top:3px;height:9px;background:#9670c65c;border-radius:4px}
+.break-even-companion-tick{position:absolute;top:0;height:17px;width:2px;background:#734baa;transform:translateX(-50%);box-shadow:0 0 0 1px white}
+.break-even-companion-label{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:#f2edf9;color:#674393;padding:1px 3px;font-size:.67rem;border-radius:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.break-even-companion-label.at-start{transform:translateX(-4%)}
+.break-even-companion-label.at-end{transform:translateX(-96%)}
 </style>
 """, unsafe_allow_html=True)
 
@@ -78,11 +85,70 @@ def _endpoint_card(title: str, position: float | int, posterior: float | None,
     )
 
 
+def _location_string(value: float, *, integer_step: bool) -> str:
+    if integer_step and abs(value - round(value)) < 1e-7:
+        return str(round(value))
+    return f"{value:.2f}" if integer_step else f"{value:.3f}".rstrip("0").rstrip(".")
+
+
+def _break_even_ruler(key: str, regions: tuple[BreakEvenRegion, ...]) -> str:
+    """Companion ruler immediately below Streamlit's native slider.
+
+    Streamlit doesn't expose custom tick positions on its slider track, so
+    this independent, aligned miniature rail displays the same locations.
+    """
+    from html import escape
+
+    spec = SLIDER_SPECS[key]
+    percent = lambda x: 100.0 * (x - spec.minimum) / (spec.maximum - spec.minimum)
+    bits = spec.step >= 1
+    parts = ['<div class="break-even-companion" role="img" aria-label="']
+    if regions:
+        words = [f"break-even between {_location_string(r.start,integer_step=bits)} and "
+                 f"{_location_string(r.end,integer_step=bits)}" if r.is_interval else
+                 f"break-even at {_location_string(r.start,integer_step=bits)}" for r in regions]
+        parts.append(escape('; '.join(words), quote=True))
+    else:
+        parts.append('No break-even in range')
+    parts.append('"><div class="break-even-companion-rail"></div>')
+    for region in regions:
+        if region.is_interval:
+            parts.append(f'<div class="break-even-companion-bar" '
+                         f'style="left:{percent(region.start):.6f}%;'
+                         f'width:{percent(region.end)-percent(region.start):.6f}%"></div>')
+        for x in ([region.start,region.end] if region.is_interval else [region.start]):
+            v = percent(x)
+            align = 'at-start' if v < 12 else 'at-end' if v > 88 else ''
+            label = ('≈' if region.interpolated else '') + _location_string(x,integer_step=bits)
+            parts.append(f'<div class="break-even-companion-tick" style="left:{v:.6f}%">'
+                         f'<span class="break-even-companion-label {align}">{escape(label)}</span>'
+                         '</div>')
+    return ''.join(parts) + '</div>'
+
+
+def _break_even_caption(key: str, regions: tuple[BreakEvenRegion, ...]) -> str:
+    spec = SLIDER_SPECS[key]
+    bits = spec.step >= 1
+    if not regions:
+        return "No break-even point in range."
+    descriptions = []
+    for region in regions:
+        low = _location_string(region.start,integer_step=bits)
+        high = _location_string(region.end,integer_step=bits)
+        if region.is_interval:
+            descriptions.append(f"equality from {low} to {high}")
+        else:
+            descriptions.append(f"{'approximately ' if region.interpolated else ''}{low}")
+    return "Break-even: " + "; ".join(descriptions) + "."
+
+
 def sensitivity_slider(key: str) -> float | int:
     """Slider with large effect icons immediately below its left/right ends."""
     spec = SLIDER_SPECS[key]
     value = st.slider(spec.label, spec.minimum, spec.maximum, step=spec.step, key=key)
     sens = analyze_slider(st.session_state, key)
+    st.markdown(_break_even_ruler(key, sens.break_evens), unsafe_allow_html=True)
+    st.caption(_break_even_caption(key, sens.break_evens))
     after_label = "P(B | E)" if spec.group == "bayes" else "P(B | J,T)"
     left, right = st.columns(2)
     with left:
@@ -123,7 +189,7 @@ with bayes:
     st.subheader("Three-world finite model")
     st.caption(EVIDENCE_LIKELIHOOD_NOTE)
     st.caption("B denotes a deliberately planted backdoor; I denotes intent to plant one.")
-    st.caption("Each endpoint arrow shows the evidence update Δ = P(B | E) − P(B) if you set THAT slider to MIN/MAX, holding the others fixed. Its own endpoint values remain fixed when you move it; moving other sliders can change them. Values are percentage points.")
+    st.caption("Endpoint arrows show the evidence update at MIN/MAX. The purple tick on the companion ruler marks Δ = 0; a purple segment marks an equality interval. These locations depend only on the other dials. Approximate ticks may lie between selectable slider steps.")
     st.markdown("Worlds: **honest**, **attempted but failed**, **successfully planted backdoor**.")
     left, right = st.columns([1, 2], gap="large")
     with left:
@@ -181,7 +247,7 @@ with search:
         alpha = sensitivity_slider("prior_restricted")
         rho = sensitivity_slider("publish_failed")
         st.caption("P(publish | successful attempt) is fixed at 100% in this toy model.")
-    st.caption("Each endpoint arrow shows Δ = P(B | published, T) − P(B | published) with that slider fixed to MIN/MAX. Moving the slider itself does not change its endpoint badges. This conditions on T, not historical evidence E.")
+    st.caption("Endpoint arrows show Δ = P(B | J,T) − P(B | J) at MIN/MAX. Purple ticks/segments on the companion rulers mark Δ = 0. This conditions on T, not E.")
     show_flip_summary(tuple(spec.key for spec in SEARCH_SLIDERS))
     st_t = planted_success(rarity, t_bits, compute, know_t)
     st_u = planted_success(rarity, u_bits, compute, know_u)
@@ -229,7 +295,7 @@ with glossary:
     st.markdown("#### The eight search-model input dials")
     _show_parameters(SEARCH_PARAMETERS)
     st.markdown("### How to read the slider-end icons")
-    st.markdown("**↘ evidence decreases backdoor probability**, **↗ evidence increases it**, **→ unchanged**, **? undefined**. Each icon shows **Δupdate = posterior − prior**, evaluated with that dial pinned at MIN or MAX, and all other dials at their current positions. This is **not** the movement relative to the current posterior. Therefore a slider cannot change its own endpoint badges, but changing other sliders may. The nearby percentage is the resulting posterior. **CAN REVERSE** checks every selectable position, not just MIN/MAX.")
+    st.markdown("**↘ evidence decreases backdoor probability**, **↗ evidence increases it**, **→ unchanged**, **? undefined**. Each icon shows **Δupdate = posterior − prior** at the dial's endpoint, holding all others fixed. It is not movement relative to the current posterior. Purple break-even ticks show where Δupdate = 0, and purple segments show equality intervals. The Streamlit version puts these ticks on a companion ruler directly below the native slider. Interpolated ticks may lie between selectable settings. Neither the ticks nor endpoint badges change when their own slider moves. **CAN REVERSE** checks every selectable position, not just MIN/MAX.")
 
 
 with assumptions:

@@ -13,10 +13,11 @@ Undefined conditioning is never counted as zero or as a sign reversal.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Mapping
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
-from seed_bayes_lab.search import method_observation_update, planted_success
+from seed_bayes_lab.search import method_observation_update, planted_success, publish_probability
 
 TOLERANCE = 1e-13
 
@@ -127,6 +128,139 @@ def direction(delta: float | None) -> str:
 
 
 @dataclass(frozen=True)
+class BreakEvenRegion:
+    """Where the evidence update is zero when only one input varies.
+
+    An isolated zero has start=end. A nonzero-width region represents a
+    sampled interval of equality, not an arbitrary root selected from it.
+    `interpolated` distinguishes a crossing between selectable UI positions.
+    """
+
+    start: float
+    end: float
+    interpolated: bool = False
+
+    @property
+    def is_interval(self) -> bool:
+        return self.end > self.start + 1e-9
+
+
+def _zero_numerator(values: Mapping[str, float | int], group: str) -> float | None:
+    """Numerator of the signed evidence update, with conditioning checked.
+
+    A numerator is preferable to testing whether a very small posterior
+    difference falls below the *display* tolerance: negligible changes are
+    not automatically mathematical break-even points.
+    """
+    if group == "bayes":
+        intent = float(values["prior_intent"])
+        success = float(values["success_given_intent"])
+        honest = 1.0 - intent
+        failed = intent * (1.0 - success)
+        backdoor = intent * success
+        lh = float(values["likelihood_honest"])
+        lf = float(values["likelihood_failed"])
+        lb = float(values["likelihood_succeeded"])
+        evidence = honest * lh + failed * lf + backdoor * lb
+        if evidence <= 0:
+            return None
+        # delta = backdoor * ((honest+failed)*lb - honest*lh - failed*lf)/evidence
+        return backdoor * ((honest + failed) * lb - honest * lh - failed * lf)
+
+    st = planted_success(
+        values["rarity_bits"], values["restricted_bits"],
+        values["compute_bits"], values["know_restricted"],
+    )
+    su = planted_success(
+        values["rarity_bits"], values["unrestricted_bits"],
+        values["compute_bits"], values["know_unrestricted"],
+    )
+    a = float(values["prior_restricted"])
+    rho = float(values["publish_failed"])
+    pt = publish_probability(st, rho)
+    pu = publish_probability(su, rho)
+    published = a * pt + (1.0 - a) * pu
+    if a <= 0 or pt <= 0 or published <= 0:
+        return None
+    # delta = rho*(1-a)*(st-su)/(pt*published)
+    if rho == 0 or a == 1:
+        return 0.0
+    difference = st - su
+    # The floating-point search probability saturates at 1 for large trial
+    # counts. If knowledge probabilities are identical, unequal finite trial
+    # counts nonetheless imply STRICT inequality mathematically (q in (0,1)).
+    # Preserve its sign to avoid drawing a spurious interval of equality.
+    kt, ku = float(values["know_restricted"]), float(values["know_unrestricted"])
+    nt = min(float(values["restricted_bits"]), float(values["compute_bits"]))
+    nu = min(float(values["unrestricted_bits"]), float(values["compute_bits"]))
+    if difference == 0.0 and kt == ku and kt > 0 and nt != nu:
+        return math.copysign(math.ulp(0.0), nt - nu)
+    return rho * (1.0 - a) * difference
+
+
+def break_even_regions(values: Mapping[str, float | int], key: str) -> tuple[BreakEvenRegion, ...]:
+    """Find zero-update points and intervals with the other dials fixed.
+
+    Inspect the full selectable lattice and refine any sign crossing by
+    bisection on a continuous extension of the selected parameter. An
+    interpolated point may not be *selectable* on a stepped slider; the UI
+    labels it approximately. Undefined conditioning never creates a marker.
+    Adjacent exactly-zero samples form an equality interval. This algorithm
+    does not claim to find unobserved tangencies between grid positions.
+    """
+    spec = SLIDER_SPECS[key]
+    positions = spec.positions()
+    driver = []
+    for position in positions:
+        candidate = dict(values)
+        candidate[key] = position
+        driver.append(_zero_numerator(candidate, spec.group))
+
+    result: list[BreakEvenRegion] = []
+    idx = 0
+    while idx < len(positions):
+        if driver[idx] is not None and driver[idx] == 0.0:
+            end = idx
+            while end + 1 < len(positions) and driver[end + 1] == 0.0:
+                end += 1
+            result.append(BreakEvenRegion(float(positions[idx]), float(positions[end])))
+            idx = end + 1
+        else:
+            idx += 1
+
+    for idx in range(len(positions) - 1):
+        lhs, rhs = driver[idx], driver[idx + 1]
+        if lhs is None or rhs is None or lhs == 0 or rhs == 0 or (lhs > 0) == (rhs > 0):
+            continue
+        low, high = float(positions[idx]), float(positions[idx + 1])
+        sign_low = lhs > 0
+        for _ in range(55):
+            mid = (low + high) / 2
+            if mid == low or mid == high:
+                break
+            candidate = dict(values)
+            candidate[key] = mid
+            mid_value = _zero_numerator(candidate, spec.group)
+            if mid_value is None:
+                # Cannot infer a zero by crossing a forbidden conditioning point.
+                break
+            if mid_value == 0.0:
+                low = high = mid
+                break
+            if (mid_value > 0) == sign_low:
+                low = mid
+            else:
+                high = mid
+        root = (low + high) / 2
+        candidate = dict(values)
+        candidate[key] = root
+        if _zero_numerator(candidate, spec.group) is not None:
+            result.append(BreakEvenRegion(root, root, interpolated=True))
+
+    return tuple(sorted(result, key=lambda region: region.start))
+
+
+@dataclass(frozen=True)
 class DialSensitivity:
     """Direction changes reachable by adjusting exactly one slider."""
 
@@ -141,6 +275,7 @@ class DialSensitivity:
     maximum_delta: float | None
     directions: frozenset[str]
     undefined_positions: int
+    break_evens: tuple[BreakEvenRegion, ...]
 
     @property
     def current_direction(self) -> str:
@@ -153,7 +288,8 @@ class DialSensitivity:
 
     @property
     def can_reach_equality(self) -> bool:
-        return self.current_direction in {"increase", "decrease"} and "unchanged" in self.directions
+        return (self.current_direction in {"increase", "decrease"}
+                and any(not root.interpolated for root in self.break_evens))
 
     @property
     def status(self) -> str:
@@ -211,7 +347,7 @@ def analyze_slider(values: Mapping[str, float | int], key: str) -> DialSensitivi
         current_posterior, endpoint_posteriors[0], endpoint_posteriors[1],
         min(all_deltas) if all_deltas else None,
         max(all_deltas) if all_deltas else None,
-        frozenset(signs), undefined,
+        frozenset(signs), undefined, break_even_regions(values, key),
     )
 
 

@@ -60,6 +60,10 @@ BAYES_QUANTITIES = (
     Entry("Δendpoint(x)", "P(B | E; x=end) − P(B; x=end), in percentage points.",
           "This control is fixed to one endpoint while all others remain at their current values. "
           "The result is independent of this control's current position."),
+    Entry("Break-even(x)", "Position(s) of dial x where P(B | E) = P(B), holding all other controls fixed.",
+          "Purple ticks mark isolated equality points; purple bars mark intervals. "
+          "Interpolated points between discrete steps may not be selectable. "
+          "Impossible evidence is never equality."),
 )
 
 SEARCH_EVENTS = (
@@ -98,6 +102,9 @@ SEARCH_QUANTITIES = (
           "P(B | J,T; x=end) − P(B | J; x=end).",
           "Fix this dial to its endpoint; all other dials stay at their current values. "
           "Undefined if conditioning has probability zero."),
+    Entry("Break-even(x) (search)", "Settings x for which P(B | J,T) = P(B | J).",
+          "Search equality can hold on an entire range if both strategies have "
+          "equal effective search budgets. Conditioning must be defined."),
 )
 
 BAYES_PARAMETERS = (

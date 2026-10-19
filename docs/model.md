@@ -204,3 +204,35 @@ The glossary specifies every event and distinguishes observation E from T.
 
 This sensitivity test is a property of the *current hypothetical model*, not
 historical evidence for or against an actual backdoor.
+
+## Break-even locations on interactive controls
+
+For each dial `x`, the interfaces show purple break-even ticks where the
+*evidence update* is zero, not where the posterior equals the posterior at
+the dial's current live position. The Bayes tab solves
+
+`P(B | E; x) - P(B; x) = 0`, conditional on `P(E)>0`.
+
+The search tab solves
+
+`P(B | J,T; x) - P(B | J; x) = 0`, conditional on `P(J∩T)>0`.
+
+The other dials are fixed during this calculation; therefore changing `x`
+does not move its own tick, but moving another dial can. A shaded purple
+segment means equality holds on a range, for example when both search methods
+are capped by the same compute budget. Interpolated roots are marked `≈`
+when they fall between selectable positions. An undefined posterior never
+creates a break-even tick.
+
+To avoid falsely declaring break-even merely because a probability update
+rounds to zero, the root detector analyzes the algebraic **numerator** of
+`posterior - prior`, rather than the `1e-13` tolerance used for displaying
+direction. For the search model, it preserves strict ordering between unequal
+finite trial counts even when floating-point success probabilities round to
+1. Search is numerical across the slider lattice with sign-changing roots
+refined by bisection; undetected tangencies between samples remain possible.
+
+Streamlit displays a companion ruler underneath its native slider (native
+custom ticks are not supported). Standalone HTML overlays ticks directly on
+its slider. These are visualization-only additions: the Lean probability
+identities and the modeled evidence are unchanged.

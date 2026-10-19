@@ -82,7 +82,13 @@ def _glossary_html() -> str:
         'dial does <strong>not</strong> change its endpoint indicators; '
         'moving any other dial can. <strong>CAN REVERSE</strong> scans every '
         'position for a change of sign in this same evidence update, '
-        'including positions between the endpoints.</p></section>'
+        'including positions between the endpoints.</p>'
+        '<p><strong>Purple ticks</strong> mark isolated break-even settings '
+        'where the evidence update is zero. A purple segment marks an interval '
+        'of equality. A ≈ marker means the zero was interpolated between '
+        'selectable steps. Undefined conditioning never produces a mark. '
+        'A mark depends on the other sliders, not its own current position. '
+        'The numerical scan can miss tangencies between positions.</p></section>'
     )
 
 
@@ -142,8 +148,15 @@ button.primary:hover{background:#184575}.helper{color:#65758a;font-size:.85rem}
 .dial-header label{font-size:.90rem;font-weight:600;color:#2c3c51}
 .dial-value{font-variant-numeric:tabular-nums;white-space:nowrap;color:#195a99;font-size:.92rem}
 .dial-rail{display:grid;grid-template-columns:minmax(100px,1fr) minmax(100px,1.25fr) minmax(100px,1fr);align-items:center;gap:9px;margin-top:8px}
-.dial-slider-wrap{min-width:0;display:flex;align-items:center;padding:0 1px}
-.dial-slider-wrap input[type=range]{width:100%;margin:0;accent-color:#366da3;cursor:pointer}
+.dial-slider-wrap{min-width:0;position:relative;display:flex;align-items:center;height:48px;padding:0 1px 20px}
+.dial-slider-wrap input[type=range]{width:100%;margin:0;accent-color:#366da3;cursor:pointer;height:24px;position:relative;z-index:1}
+.break-even-track{position:absolute;left:9px;right:9px;top:7px;height:35px;pointer-events:none;z-index:2}
+.break-even-band{position:absolute;top:6px;height:9px;border-radius:4px;background:#946ac568;box-shadow:inset 0 0 0 1px #7854aa80}
+.break-even-tick{position:absolute;top:0;height:22px;width:2px;transform:translateX(-50%);background:#7044a3;box-shadow:0 0 0 1px #fff;z-index:2}
+.break-even-label{position:absolute;top:22px;left:50%;transform:translateX(-50%);padding:1px 3px;border-radius:3px;background:#f0eaf8;color:#684393;font-weight:700;font-size:.66rem;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+.break-even-label.at-start{transform:translateX(-5%)}
+.break-even-label.at-end{transform:translateX(-95%)}
+.break-even-note{font-size:.70rem;color:#674898;line-height:1.25;margin-top:1px;min-height:1.25em}
 .dial-extreme{border:1px solid #e0e5ec;background:#f9fafc;border-radius:10px;padding:8px 7px;min-width:0;min-height:76px;transition:background .15s}
 .extreme-label{font-size:.66rem;letter-spacing:.035em;color:#667588;font-weight:720}
 .extreme-main{display:flex;align-items:center;gap:5px;margin:4px 0;font-variant-numeric:tabular-nums}
@@ -204,7 +217,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <button type="button" id="tab-glossary" role="tab" aria-controls="panel-glossary" aria-selected="false">Notation glossary</button>
 </div>
 <section id="panel-bayes" role="tabpanel" aria-labelledby="tab-bayes">
-<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points.</p>
+<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points. Purple ticks mark isolated break-even settings (Δ = 0); a purple bar marks an interval of equality. Ticks depend on the other dials, not the dial itself.</p>
 <div class="workspace">
 <div class="controls"><h2>Bayesian assumptions</h2><p class="detail">P(I) starts at 0.50 as a <em>symmetric demonstration prior</em>, not as a measured historical probability or a claim of ignorance.</p><div id="bayes-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics">
@@ -217,7 +230,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="chart-panel"><div id="bayes-heatmap" class="chart"></div></div>
 </div></div></section>
 <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden>
-<p class="intro">%%METHOD_OBSERVATION%% In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX, holding other dials fixed; the dial's own live position does not affect its endpoint badges. This is not evidence E.</p>
+<p class="intro">%%METHOD_OBSERVATION%% In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX. Purple ticks mark Δ = 0, and purple bars mark equality intervals, holding the other dials fixed. This is not evidence E.</p>
 <div class="workspace">
 <div class="controls"><h2>Search and selection assumptions</h2><p class="detail">Candidate rarity, available choices, computing budget, attack knowledge, and publication policy are separately adjustable hypothetical controls.</p><div id="search-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -229,7 +242,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="caveat">The independent-candidate search model does not capture direct cryptanalytic constructions. At parameter combinations with zero-probability observations, the posterior is <strong>undefined</strong> and is not counted as unchanged.</div>
 </div></div></section>
 <section id="panel-glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden>%%GLOSSARY_HTML%%</section>
-<footer>Endpoint arrows: posterior minus prior evaluated at each fixed MIN/MAX setting, with other controls held fixed. A dial cannot change its own endpoint indicators. "CAN REVERSE" and the Δ range scan all positions, including interior settings. Undefined conditioning is not treated as equality. See the notation glossary for every event.</footer>
+<footer>Endpoint arrows: posterior minus prior evaluated at each fixed MIN/MAX setting, with other controls held fixed. Purple ticks: break-even (posterior equals prior), with a shaded interval when equality holds throughout a range. Neither endpoint badges nor break-even locations depend on their own dial's current value. "CAN REVERSE" scans selectable positions; an interpolated break-even may fall between discrete steps. Undefined conditioning is not equality. See the glossary for the exact events.</footer>
 </main>
 <script>%%PLOTLY_JS%%</script>
 <script>%%OFFLINE_JS%%</script>

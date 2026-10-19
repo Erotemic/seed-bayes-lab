@@ -98,7 +98,9 @@
     const present = direction(current);
     const reverse = (present === 'decrease' && directions.has('increase')) ||
       (present === 'increase' && directions.has('decrease'));
-    const equality = ['increase','decrease'].includes(present) && directions.has('unchanged');
+    const roots = breakEvens(s, spec);
+    const equality = ['increase','decrease'].includes(present) &&
+      roots.some(root => !root.interpolated);
     let status;
     if (present === 'undefined') status = 'Current conditioning undefined';
     else if (reverse) status = 'CAN REVERSE';
@@ -114,7 +116,78 @@
     // every other dial. Do NOT subtract the current posterior here.
     return { left, right, leftPosterior, rightPosterior,
       minimum, maximum, undefinedCount, directions,
-      current, present, reverse, equality, status };
+      current, present, reverse, equality, status, breakEvens:roots };
+  }
+
+  // Algebraic numerator of posterior-minus-prior. A small (nonzero)
+  // probability change is not automatically a break-even point.
+  // Null means conditioning is impossible, so it must not produce a tick.
+  function zeroNumerator(s, group) {
+    if (group === 'bayes') {
+      const honest = 1 - s.prior_intent;
+      const failed = s.prior_intent * (1 - s.success_given_intent);
+      const b = s.prior_intent * s.success_given_intent;
+      const h = s.likelihood_honest, f = s.likelihood_failed;
+      const lb = s.likelihood_succeeded;
+      const z = honest * h + failed * f + b * lb;
+      if (!(z > 0)) return null;
+      return b * ((honest + failed) * lb - honest * h - failed * f);
+    }
+    const t = s.know_restricted * independentSearch(
+      s.rarity_bits, s.restricted_bits, s.compute_bits);
+    const u = s.know_unrestricted * independentSearch(
+      s.rarity_bits, s.unrestricted_bits, s.compute_bits);
+    const a = s.prior_restricted, rho = s.publish_failed;
+    const pt = t + (1 - t) * rho;
+    const pu = u + (1 - u) * rho;
+    if (!(a > 0) || !(pt > 0) || !(a * pt + (1 - a) * pu > 0)) return null;
+    if (rho === 0 || a === 1) return 0;
+    const kT = s.know_restricted, kU = s.know_unrestricted;
+    const nT = Math.min(s.restricted_bits,s.compute_bits);
+    const nU = Math.min(s.unrestricted_bits,s.compute_bits);
+    if (t === u && kT === kU && kT > 0 && nT !== nU) {
+      // Even if floating point rounds two saturated success chances to 1,
+      // their exact mathematical ordering follows the effective trial count.
+      return (nT > nU ? 1 : -1) * Number.MIN_VALUE;
+    }
+    return rho * (1 - a) * (t - u);
+  }
+
+  function breakEvens(s, spec) {
+    const count = Math.round((spec.max - spec.min) / spec.step);
+    const xs = Array.from({length:count+1}, (_,i)=>
+      Number((spec.min + i * spec.step).toFixed(9)));
+    const signed = xs.map(x => zeroNumerator({...s,[spec.key]:x}, spec.group));
+    const regions = [];
+    let i = 0;
+    while (i < xs.length) {
+      if (signed[i] !== null && signed[i] === 0) {
+        let end = i;
+        while (end + 1 < xs.length && signed[end+1] === 0) end += 1;
+        regions.push({start:xs[i],end:xs[end],interpolated:false});
+        i = end + 1;
+      } else i += 1;
+    }
+    for (let j=0;j<xs.length-1;j++) {
+      const left = signed[j], right = signed[j+1];
+      if (left === null || right === null || left === 0 || right === 0 ||
+          (left > 0) === (right > 0)) continue;
+      let low = xs[j], high = xs[j+1];
+      const lowPositive = left > 0;
+      for (let iteration=0;iteration<55;iteration++) {
+        const mid = (low + high) / 2;
+        if (mid === low || mid === high) break;
+        const value = zeroNumerator({...s,[spec.key]:mid},spec.group);
+        if (value === null) break;
+        if (value === 0) {low=high=mid;break;}
+        if ((value > 0) === lowPositive) low = mid;
+        else high = mid;
+      }
+      const root = (low + high) / 2;
+      if (zeroNumerator({...s,[spec.key]:root},spec.group) !== null)
+        regions.push({start:root,end:root,interpolated:true});
+    }
+    return regions.sort((a,b)=>a.start-b.start);
   }
 
   function createText(tag, css, text) {
@@ -154,6 +227,10 @@
         left.id = 'left-' + spec.key;
         const sliderWrap = createText('div', 'dial-slider-wrap', '');
         sliderWrap.append(slider);
+        const ticks = createText('div', 'break-even-track', '');
+        ticks.id = 'break-even-' + spec.key;
+        ticks.setAttribute('aria-hidden', 'true');
+        sliderWrap.append(ticks);
         const right = createText('div', 'dial-extreme', '');
         right.id = 'right-' + spec.key;
         rail.append(left, sliderWrap, right);
@@ -163,7 +240,9 @@
         const range = createText('span', 'dial-range', '');
         range.id = 'range-' + spec.key;
         statusRow.append(status, range);
-        wrap.append(head, rail, statusRow);
+        const breakEvenNote = createText('div','break-even-note','');
+        breakEvenNote.id = 'break-even-note-' + spec.key;
+        wrap.append(head, rail, breakEvenNote, statusRow);
         target.appendChild(wrap);
       }
     }
@@ -194,6 +273,53 @@
     element.replaceChildren(title, content, detail);
   }
 
+  function formatLocation(number, spec) {
+    const isInteger = spec.step >= 1;
+    if (isInteger && Math.abs(number - Math.round(number)) < 1e-7)
+      return String(Math.round(number));
+    return number.toFixed(isInteger ? 2 : 3).replace(/0+$/, '').replace(/\.$/, '');
+  }
+
+  function renderBreakEven(spec, regions) {
+    const target = document.getElementById('break-even-' + spec.key);
+    target.replaceChildren();
+    const slider = document.getElementById('slider-' + spec.key);
+    const describe = document.getElementById('break-even-note-' + spec.key);
+    const fraction = x => 100 * (x - spec.min) / (spec.max - spec.min);
+    const notes = [];
+    for (const region of regions) {
+      const isRange = region.end > region.start + 1e-9;
+      const start = formatLocation(region.start, spec);
+      const end = formatLocation(region.end, spec);
+      if (isRange) {
+        const shade = createText('span', 'break-even-band', '');
+        shade.style.left = fraction(region.start) + '%';
+        shade.style.width = (fraction(region.end) - fraction(region.start)) + '%';
+        target.append(shade);
+        notes.push('Equal update on [' + start + ', ' + end + ']');
+      } else {
+        notes.push((region.interpolated ? 'Approximate break-even: ' : 'Break-even: ') + start);
+      }
+      const endpoints = isRange ? [region.start,region.end] : [region.start];
+      for (const x of endpoints) {
+        const at = fraction(x);
+        const tick = createText('span', 'break-even-tick', '');
+        tick.style.left = at + '%';
+        tick.dataset.value = String(x);
+        if (!isRange || Math.abs(region.end - region.start) > spec.step*2) {
+          const label = createText('span', 'break-even-label',
+            (region.interpolated ? '\u2248' : '') + formatLocation(x, spec));
+          if (at < 12) label.classList.add('at-start');
+          if (at > 88) label.classList.add('at-end');
+          tick.append(label);
+        }
+        target.append(tick);
+      }
+    }
+    describe.textContent = notes.length ? notes.join(' · ') : 'No break-even point in range';
+    slider.setAttribute('aria-describedby', describe.id);
+  }
+
   function renderSweepIndicators(config, values) {
     for (const group of GROUPS) {
       const specs = config.specs.filter(item => item.group === group);
@@ -208,6 +334,7 @@
           sensitivity.leftPosterior, sensitivity.left, group);
         renderExtreme('right-' + spec.key, 'MAX', spec.max,
           sensitivity.rightPosterior, sensitivity.right, group);
+        renderBreakEven(spec, sensitivity.breakEvens);
         const status = document.getElementById('status-' + spec.key);
         status.textContent = sensitivity.status;
         status.className = 'dial-status ' + (sensitivity.reverse ? 'flip' :
@@ -358,6 +485,7 @@
   }
 
   root.SeedBayesOffline = {
-    finiteBayes, methodUpdate, independentSearch, direction, formatter, sweep, mount
+    finiteBayes, methodUpdate, independentSearch, direction, formatter,
+    zeroNumerator, breakEvens, sweep, mount
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

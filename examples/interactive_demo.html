@@ -28,8 +28,15 @@ button.primary:hover{background:#184575}.helper{color:#65758a;font-size:.85rem}
 .dial-header label{font-size:.90rem;font-weight:600;color:#2c3c51}
 .dial-value{font-variant-numeric:tabular-nums;white-space:nowrap;color:#195a99;font-size:.92rem}
 .dial-rail{display:grid;grid-template-columns:minmax(100px,1fr) minmax(100px,1.25fr) minmax(100px,1fr);align-items:center;gap:9px;margin-top:8px}
-.dial-slider-wrap{min-width:0;display:flex;align-items:center;padding:0 1px}
-.dial-slider-wrap input[type=range]{width:100%;margin:0;accent-color:#366da3;cursor:pointer}
+.dial-slider-wrap{min-width:0;position:relative;display:flex;align-items:center;height:48px;padding:0 1px 20px}
+.dial-slider-wrap input[type=range]{width:100%;margin:0;accent-color:#366da3;cursor:pointer;height:24px;position:relative;z-index:1}
+.break-even-track{position:absolute;left:9px;right:9px;top:7px;height:35px;pointer-events:none;z-index:2}
+.break-even-band{position:absolute;top:6px;height:9px;border-radius:4px;background:#946ac568;box-shadow:inset 0 0 0 1px #7854aa80}
+.break-even-tick{position:absolute;top:0;height:22px;width:2px;transform:translateX(-50%);background:#7044a3;box-shadow:0 0 0 1px #fff;z-index:2}
+.break-even-label{position:absolute;top:22px;left:50%;transform:translateX(-50%);padding:1px 3px;border-radius:3px;background:#f0eaf8;color:#684393;font-weight:700;font-size:.66rem;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+.break-even-label.at-start{transform:translateX(-5%)}
+.break-even-label.at-end{transform:translateX(-95%)}
+.break-even-note{font-size:.70rem;color:#674898;line-height:1.25;margin-top:1px;min-height:1.25em}
 .dial-extreme{border:1px solid #e0e5ec;background:#f9fafc;border-radius:10px;padding:8px 7px;min-width:0;min-height:76px;transition:background .15s}
 .extreme-label{font-size:.66rem;letter-spacing:.035em;color:#667588;font-weight:720}
 .extreme-main{display:flex;align-items:center;gap:5px;margin:4px 0;font-variant-numeric:tabular-nums}
@@ -90,7 +97,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <button type="button" id="tab-glossary" role="tab" aria-controls="panel-glossary" aria-selected="false">Notation glossary</button>
 </div>
 <section id="panel-bayes" role="tabpanel" aria-labelledby="tab-bayes">
-<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points.</p>
+<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points. Purple ticks mark isolated break-even settings (Δ = 0); a purple bar marks an interval of equality. Ticks depend on the other dials, not the dial itself.</p>
 <div class="workspace">
 <div class="controls"><h2>Bayesian assumptions</h2><p class="detail">P(I) starts at 0.50 as a <em>symmetric demonstration prior</em>, not as a measured historical probability or a claim of ignorance.</p><div id="bayes-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics">
@@ -103,7 +110,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="chart-panel"><div id="bayes-heatmap" class="chart"></div></div>
 </div></div></section>
 <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden>
-<p class="intro">In the second model, observation T means that the published curve came from the restricted timestamp method, after publication. This is a stronger assumption than E alone: matching the historical generator does not prove the designer&#x27;s search was truly restricted. In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX, holding other dials fixed; the dial's own live position does not affect its endpoint badges. This is not evidence E.</p>
+<p class="intro">In the second model, observation T means that the published curve came from the restricted timestamp method, after publication. This is a stronger assumption than E alone: matching the historical generator does not prove the designer&#x27;s search was truly restricted. In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX. Purple ticks mark Δ = 0, and purple bars mark equality intervals, holding the other dials fixed. This is not evidence E.</p>
 <div class="workspace">
 <div class="controls"><h2>Search and selection assumptions</h2><p class="detail">Candidate rarity, available choices, computing budget, attack knowledge, and publication policy are separately adjustable hypothetical controls.</p><div id="search-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -114,8 +121,8 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="chart-panel"><div id="search-curves" class="chart"></div></div>
 <div class="caveat">The independent-candidate search model does not capture direct cryptanalytic constructions. At parameter combinations with zero-probability observations, the posterior is <strong>undefined</strong> and is not counted as unchanged.</div>
 </div></div></section>
-<section id="panel-glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden><div class="glossary-intro"><h2>Notation and exact events</h2><p>The finite Bayes model conditions on the <strong>observed reconstruction E</strong>. The separate search model conditions on a <strong>genuinely used method T</strong> among published curves. These are not the same event. All numeric inputs are assumptions, not historical estimates.</p></div><h2 class="glossary-group-title">1. Finite Bayes model</h2><p class="intro">The elementary sample space is <code>Ω = {H, F, B}</code>. Exactly one world holds for the published curve.</p><section class="glossary-section"><h3>Events and worlds</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>Ω = {H, F, B}</code></th><td>The exhaustive, mutually exclusive outcomes in the finite Bayes model.</td><td>One published curve is modeled as belonging to exactly one world.</td></tr><tr><th scope="row"><code>H</code></th><td>No malicious attempt to plant a backdoor was made.</td><td>The honest/no-attempt world; B is false.</td></tr><tr><th scope="row"><code>F</code></th><td>A malicious attempt was made, but it did not produce a planted backdoor.</td><td>The attempted-but-failed world; B is false.</td></tr><tr><th scope="row"><code>B</code></th><td>A deliberately planted exploitable weakness is present in the published curve.</td><td>This does not mean an accidental weakness, a vulnerable application, or malicious intent alone.</td></tr><tr><th scope="row"><code>I = F ∪ B</code></th><td>The designer intended or attempted to plant a backdoor.</td><td>I can be true while B is false; P(B) = P(I) × P(B | I).</td></tr><tr><th scope="row"><code>¬B = H ∪ F</code></th><td>The published curve has no deliberately planted backdoor.</td><td>Includes both no-attempt and failed-attempt worlds.</td></tr><tr><th scope="row"><code>E</code></th><td>The published NIST prime-curve seeds match reconstructible lrand48 streams with plausible 1997–1998 timestamp initializations, including P-256 candidate 1,842.</td><td>A retrospective observation. E does not establish impartial clock reading, no restarts, the stopping rule, or that a backdoor exists or does not exist.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Probability notation and updates</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>P(B)</code></th><td>Probability of an intentionally planted backdoor before incorporating E.</td><td>An illustrative prior, conditional on whatever background knowledge the model assumes.</td></tr><tr><th scope="row"><code>P(B | E)</code></th><td>Probability of that same event B after conditioning on E.</td><td>Defined only if P(E) &gt; 0.</td></tr><tr><th scope="row"><code>P(I | E)</code></th><td>Probability of malicious intent after observing E.</td><td>This can differ in direction from the probability of successful backdooring.</td></tr><tr><th scope="row"><code>P(E | H), P(E | F), P(E | B)</code></th><td>Assumed likelihoods of observing the recovered evidence in each world.</td><td>Hypothetical modeling inputs, not measured frequencies from the historical record.</td></tr><tr><th scope="row"><code>Δupdate</code></th><td>Posterior − prior, P(B | E) − P(B), in percentage points.</td><td>The can-reverse indicator scans the sign of this quantity.</td></tr><tr><th scope="row"><code>Δendpoint(x)</code></th><td>P(B | E; x=end) − P(B; x=end), in percentage points.</td><td>This control is fixed to one endpoint while all others remain at their current values. The result is independent of this control&#x27;s current position.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Five input dials</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>P(I) / P(I): malicious intent</code></th><td>Prior chance the designer intended to plant a backdoor.</td><td>0.5 is a symmetric demonstration prior, not a historical estimate.</td></tr><tr><th scope="row"><code>P(B | I) / P(B | I): attack succeeds</code></th><td>Prior chance the published curve contains a deliberately planted backdoor, given intent.</td><td>This is a conditional success assumption.</td></tr><tr><th scope="row"><code>P(E | H) / P(E | honest)</code></th><td>Chance of observing the reconstructed evidence in the no-attempt world.</td><td></td></tr><tr><th scope="row"><code>P(E | F) / P(E | attempted but failed)</code></th><td>Chance of observing the reconstructed evidence after a failed malicious attempt.</td><td></td></tr><tr><th scope="row"><code>P(E | B) / P(E | successful backdoor)</code></th><td>Chance of observing the reconstructed evidence if the backdoor was planted successfully.</td><td></td></tr></tbody></table></div></section><h2 class="glossary-group-title">2. Search and publication model</h2><p class="intro">Malicious intent is certain in this toy model. The design process chooses T or U before attempting to plant a backdoor; J describes whether the attempt was published.</p><section class="glossary-section"><h3>Events</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>I</code></th><td>Malicious intent is assumed certain in this separate search model.</td><td>Every attempted construction seeks a deliberate backdoor.</td></tr><tr><th scope="row"><code>T</code></th><td>The designer actually uses the restricted timestamp method.</td><td>T describes a stronger historical restriction than observing E.</td></tr><tr><th scope="row"><code>U = ¬T</code></th><td>The designer uses the alternative, less restricted method.</td><td>T and U are exhaustive in this simplified two-method model.</td></tr><tr><th scope="row"><code>K</code></th><td>The adversary knows a usable, efficiently recognizable attack property.</td><td>Knowledge probabilities can depend on the selected method.</td></tr><tr><th scope="row"><code>B</code></th><td>A planted backdoor is successfully produced by the attempted search.</td><td>In this search model, success is tied to knowledge and an independent candidate search.</td></tr><tr><th scope="row"><code>J</code></th><td>The attempted curve is published.</td><td>This model assumes P(J | B) = 1 and P(J | ¬B) = ρ.</td></tr><tr><th scope="row"><code>E (first tab)</code></th><td>Reconstructed historical seed provenance.</td><td>NOT interchangeable with T. This second tab conditions on T among published curves.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Probabilities and search formulas</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>P(B | J)</code></th><td>Backdoor probability among published attempted curves, before observing T.</td><td>Already conditions on publication.</td></tr><tr><th scope="row"><code>P(B | J, T)</code></th><td>Backdoor probability among published curves using method T.</td><td>Defined only if P(J ∩ T) &gt; 0.</td></tr><tr><th scope="row"><code>q = 2^(−k)</code></th><td>Hypothetical fraction of eligible curves exhibiting a recognizable weakness.</td><td>Independence and efficient recognition are assumptions, not historical facts.</td></tr><tr><th scope="row"><code>N = 2^min(b, c)</code></th><td>Effective candidate count for freedom b and compute-budget c bits.</td><td>The model treats the candidate tests as independent draws.</td></tr><tr><th scope="row"><code>sT, sU</code></th><td>Probability the attack succeeds under T and U, respectively.</td><td>sT = P(K | T) × [1 − (1 − q)^NT], analogously for U.</td></tr><tr><th scope="row"><code>ρ</code></th><td>Probability a failed attempt is nevertheless published.</td><td>A successfully planted backdoor always publishes in this toy model.</td></tr><tr><th scope="row"><code>Δupdate (search)</code></th><td>P(B | J, T) − P(B | J), in percentage points.</td><td>This is a method-observation update, NOT an update from E.</td></tr><tr><th scope="row"><code>Δendpoint (search)</code></th><td>P(B | J,T; x=end) − P(B | J; x=end).</td><td>Fix this dial to its endpoint; all other dials stay at their current values. Undefined if conditioning has probability zero.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Eight input dials</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>bT / Timestamp method freedom (bits)</code></th><td>Log₂ number of candidate choices reachable using T.</td><td>A hypothetical candidate freedom, not a verified 1997 search effort.</td></tr><tr><th scope="row"><code>bU / Alternative method freedom (bits)</code></th><td>Log₂ number of candidate choices reachable using U.</td><td></td></tr><tr><th scope="row"><code>c / Evaluation budget (bits)</code></th><td>Log₂ number of candidates the attacker could evaluate.</td><td></td></tr><tr><th scope="row"><code>k / Secret vulnerability rarity k (bits)</code></th><td>Negative log₂ frequency of eligible curves with the secret property.</td><td></td></tr><tr><th scope="row"><code>P(K | T) / P(attack known | method T)</code></th><td>Chance the adversary knows a usable attack with T.</td><td></td></tr><tr><th scope="row"><code>P(K | U) / P(attack known | method U)</code></th><td>Chance the adversary knows a usable attack with U.</td><td></td></tr><tr><th scope="row"><code>P(T) / P(method T), before publication</code></th><td>Probability method T was selected before seeing success.</td><td></td></tr><tr><th scope="row"><code>ρ / P(publish | failed attempt)</code></th><td>Chance a failed malicious attempt is still published.</td><td></td></tr></tbody></table></div></section><section class="glossary-section"><h3>Reading the visual endpoint indicators</h3><p><strong>↘</strong> means the evidence lowers the probability of B at that endpoint; <strong>↗</strong> means it raises the probability; <strong>→</strong> means no update, and <strong>?</strong> means conditioning is undefined. The percentage-point delta at an endpoint is <code>P(B | E; x=end) − P(B; x=end)</code> (or <code>P(B | J,T; x=end) − P(B | J; x=end)</code> in the search tab), with all other sliders held at their current settings. The small percentage is the resulting posterior.</p><p>Because the endpoint fixes the dial being examined, moving that dial does <strong>not</strong> change its endpoint indicators; moving any other dial can. <strong>CAN REVERSE</strong> scans every position for a change of sign in this same evidence update, including positions between the endpoints.</p></section></section>
-<footer>Endpoint arrows: posterior minus prior evaluated at each fixed MIN/MAX setting, with other controls held fixed. A dial cannot change its own endpoint indicators. "CAN REVERSE" and the Δ range scan all positions, including interior settings. Undefined conditioning is not treated as equality. See the notation glossary for every event.</footer>
+<section id="panel-glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden><div class="glossary-intro"><h2>Notation and exact events</h2><p>The finite Bayes model conditions on the <strong>observed reconstruction E</strong>. The separate search model conditions on a <strong>genuinely used method T</strong> among published curves. These are not the same event. All numeric inputs are assumptions, not historical estimates.</p></div><h2 class="glossary-group-title">1. Finite Bayes model</h2><p class="intro">The elementary sample space is <code>Ω = {H, F, B}</code>. Exactly one world holds for the published curve.</p><section class="glossary-section"><h3>Events and worlds</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>Ω = {H, F, B}</code></th><td>The exhaustive, mutually exclusive outcomes in the finite Bayes model.</td><td>One published curve is modeled as belonging to exactly one world.</td></tr><tr><th scope="row"><code>H</code></th><td>No malicious attempt to plant a backdoor was made.</td><td>The honest/no-attempt world; B is false.</td></tr><tr><th scope="row"><code>F</code></th><td>A malicious attempt was made, but it did not produce a planted backdoor.</td><td>The attempted-but-failed world; B is false.</td></tr><tr><th scope="row"><code>B</code></th><td>A deliberately planted exploitable weakness is present in the published curve.</td><td>This does not mean an accidental weakness, a vulnerable application, or malicious intent alone.</td></tr><tr><th scope="row"><code>I = F ∪ B</code></th><td>The designer intended or attempted to plant a backdoor.</td><td>I can be true while B is false; P(B) = P(I) × P(B | I).</td></tr><tr><th scope="row"><code>¬B = H ∪ F</code></th><td>The published curve has no deliberately planted backdoor.</td><td>Includes both no-attempt and failed-attempt worlds.</td></tr><tr><th scope="row"><code>E</code></th><td>The published NIST prime-curve seeds match reconstructible lrand48 streams with plausible 1997–1998 timestamp initializations, including P-256 candidate 1,842.</td><td>A retrospective observation. E does not establish impartial clock reading, no restarts, the stopping rule, or that a backdoor exists or does not exist.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Probability notation and updates</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>P(B)</code></th><td>Probability of an intentionally planted backdoor before incorporating E.</td><td>An illustrative prior, conditional on whatever background knowledge the model assumes.</td></tr><tr><th scope="row"><code>P(B | E)</code></th><td>Probability of that same event B after conditioning on E.</td><td>Defined only if P(E) &gt; 0.</td></tr><tr><th scope="row"><code>P(I | E)</code></th><td>Probability of malicious intent after observing E.</td><td>This can differ in direction from the probability of successful backdooring.</td></tr><tr><th scope="row"><code>P(E | H), P(E | F), P(E | B)</code></th><td>Assumed likelihoods of observing the recovered evidence in each world.</td><td>Hypothetical modeling inputs, not measured frequencies from the historical record.</td></tr><tr><th scope="row"><code>Δupdate</code></th><td>Posterior − prior, P(B | E) − P(B), in percentage points.</td><td>The can-reverse indicator scans the sign of this quantity.</td></tr><tr><th scope="row"><code>Δendpoint(x)</code></th><td>P(B | E; x=end) − P(B; x=end), in percentage points.</td><td>This control is fixed to one endpoint while all others remain at their current values. The result is independent of this control&#x27;s current position.</td></tr><tr><th scope="row"><code>Break-even(x)</code></th><td>Position(s) of dial x where P(B | E) = P(B), holding all other controls fixed.</td><td>Purple ticks mark isolated equality points; purple bars mark intervals. Interpolated points between discrete steps may not be selectable. Impossible evidence is never equality.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Five input dials</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>P(I) / P(I): malicious intent</code></th><td>Prior chance the designer intended to plant a backdoor.</td><td>0.5 is a symmetric demonstration prior, not a historical estimate.</td></tr><tr><th scope="row"><code>P(B | I) / P(B | I): attack succeeds</code></th><td>Prior chance the published curve contains a deliberately planted backdoor, given intent.</td><td>This is a conditional success assumption.</td></tr><tr><th scope="row"><code>P(E | H) / P(E | honest)</code></th><td>Chance of observing the reconstructed evidence in the no-attempt world.</td><td></td></tr><tr><th scope="row"><code>P(E | F) / P(E | attempted but failed)</code></th><td>Chance of observing the reconstructed evidence after a failed malicious attempt.</td><td></td></tr><tr><th scope="row"><code>P(E | B) / P(E | successful backdoor)</code></th><td>Chance of observing the reconstructed evidence if the backdoor was planted successfully.</td><td></td></tr></tbody></table></div></section><h2 class="glossary-group-title">2. Search and publication model</h2><p class="intro">Malicious intent is certain in this toy model. The design process chooses T or U before attempting to plant a backdoor; J describes whether the attempt was published.</p><section class="glossary-section"><h3>Events</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>I</code></th><td>Malicious intent is assumed certain in this separate search model.</td><td>Every attempted construction seeks a deliberate backdoor.</td></tr><tr><th scope="row"><code>T</code></th><td>The designer actually uses the restricted timestamp method.</td><td>T describes a stronger historical restriction than observing E.</td></tr><tr><th scope="row"><code>U = ¬T</code></th><td>The designer uses the alternative, less restricted method.</td><td>T and U are exhaustive in this simplified two-method model.</td></tr><tr><th scope="row"><code>K</code></th><td>The adversary knows a usable, efficiently recognizable attack property.</td><td>Knowledge probabilities can depend on the selected method.</td></tr><tr><th scope="row"><code>B</code></th><td>A planted backdoor is successfully produced by the attempted search.</td><td>In this search model, success is tied to knowledge and an independent candidate search.</td></tr><tr><th scope="row"><code>J</code></th><td>The attempted curve is published.</td><td>This model assumes P(J | B) = 1 and P(J | ¬B) = ρ.</td></tr><tr><th scope="row"><code>E (first tab)</code></th><td>Reconstructed historical seed provenance.</td><td>NOT interchangeable with T. This second tab conditions on T among published curves.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Probabilities and search formulas</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>P(B | J)</code></th><td>Backdoor probability among published attempted curves, before observing T.</td><td>Already conditions on publication.</td></tr><tr><th scope="row"><code>P(B | J, T)</code></th><td>Backdoor probability among published curves using method T.</td><td>Defined only if P(J ∩ T) &gt; 0.</td></tr><tr><th scope="row"><code>q = 2^(−k)</code></th><td>Hypothetical fraction of eligible curves exhibiting a recognizable weakness.</td><td>Independence and efficient recognition are assumptions, not historical facts.</td></tr><tr><th scope="row"><code>N = 2^min(b, c)</code></th><td>Effective candidate count for freedom b and compute-budget c bits.</td><td>The model treats the candidate tests as independent draws.</td></tr><tr><th scope="row"><code>sT, sU</code></th><td>Probability the attack succeeds under T and U, respectively.</td><td>sT = P(K | T) × [1 − (1 − q)^NT], analogously for U.</td></tr><tr><th scope="row"><code>ρ</code></th><td>Probability a failed attempt is nevertheless published.</td><td>A successfully planted backdoor always publishes in this toy model.</td></tr><tr><th scope="row"><code>Δupdate (search)</code></th><td>P(B | J, T) − P(B | J), in percentage points.</td><td>This is a method-observation update, NOT an update from E.</td></tr><tr><th scope="row"><code>Δendpoint (search)</code></th><td>P(B | J,T; x=end) − P(B | J; x=end).</td><td>Fix this dial to its endpoint; all other dials stay at their current values. Undefined if conditioning has probability zero.</td></tr><tr><th scope="row"><code>Break-even(x) (search)</code></th><td>Settings x for which P(B | J,T) = P(B | J).</td><td>Search equality can hold on an entire range if both strategies have equal effective search budgets. Conditioning must be defined.</td></tr></tbody></table></div></section><section class="glossary-section"><h3>Eight input dials</h3><div class="glossary-overflow"><table><thead><tr><th scope="col">Notation</th><th scope="col">Exact definition</th><th scope="col">Qualification</th></tr></thead><tbody><tr><th scope="row"><code>bT / Timestamp method freedom (bits)</code></th><td>Log₂ number of candidate choices reachable using T.</td><td>A hypothetical candidate freedom, not a verified 1997 search effort.</td></tr><tr><th scope="row"><code>bU / Alternative method freedom (bits)</code></th><td>Log₂ number of candidate choices reachable using U.</td><td></td></tr><tr><th scope="row"><code>c / Evaluation budget (bits)</code></th><td>Log₂ number of candidates the attacker could evaluate.</td><td></td></tr><tr><th scope="row"><code>k / Secret vulnerability rarity k (bits)</code></th><td>Negative log₂ frequency of eligible curves with the secret property.</td><td></td></tr><tr><th scope="row"><code>P(K | T) / P(attack known | method T)</code></th><td>Chance the adversary knows a usable attack with T.</td><td></td></tr><tr><th scope="row"><code>P(K | U) / P(attack known | method U)</code></th><td>Chance the adversary knows a usable attack with U.</td><td></td></tr><tr><th scope="row"><code>P(T) / P(method T), before publication</code></th><td>Probability method T was selected before seeing success.</td><td></td></tr><tr><th scope="row"><code>ρ / P(publish | failed attempt)</code></th><td>Chance a failed malicious attempt is still published.</td><td></td></tr></tbody></table></div></section><section class="glossary-section"><h3>Reading the visual endpoint indicators</h3><p><strong>↘</strong> means the evidence lowers the probability of B at that endpoint; <strong>↗</strong> means it raises the probability; <strong>→</strong> means no update, and <strong>?</strong> means conditioning is undefined. The percentage-point delta at an endpoint is <code>P(B | E; x=end) − P(B; x=end)</code> (or <code>P(B | J,T; x=end) − P(B | J; x=end)</code> in the search tab), with all other sliders held at their current settings. The small percentage is the resulting posterior.</p><p>Because the endpoint fixes the dial being examined, moving that dial does <strong>not</strong> change its endpoint indicators; moving any other dial can. <strong>CAN REVERSE</strong> scans every position for a change of sign in this same evidence update, including positions between the endpoints.</p><p><strong>Purple ticks</strong> mark isolated break-even settings where the evidence update is zero. A purple segment marks an interval of equality. A ≈ marker means the zero was interpolated between selectable steps. Undefined conditioning never produces a mark. A mark depends on the other sliders, not its own current position. The numerical scan can miss tangencies between positions.</p></section></section>
+<footer>Endpoint arrows: posterior minus prior evaluated at each fixed MIN/MAX setting, with other controls held fixed. Purple ticks: break-even (posterior equals prior), with a shaded interval when equality holds throughout a range. Neither endpoint badges nor break-even locations depend on their own dial's current value. "CAN REVERSE" scans selectable positions; an interpolated break-even may fall between discrete steps. Undefined conditioning is not equality. See the glossary for the exact events.</footer>
 </main>
 <script>/**
 * plotly.js v4.1.1
@@ -3837,7 +3844,9 @@ return Plotly;
     const present = direction(current);
     const reverse = (present === 'decrease' && directions.has('increase')) ||
       (present === 'increase' && directions.has('decrease'));
-    const equality = ['increase','decrease'].includes(present) && directions.has('unchanged');
+    const roots = breakEvens(s, spec);
+    const equality = ['increase','decrease'].includes(present) &&
+      roots.some(root => !root.interpolated);
     let status;
     if (present === 'undefined') status = 'Current conditioning undefined';
     else if (reverse) status = 'CAN REVERSE';
@@ -3853,7 +3862,78 @@ return Plotly;
     // every other dial. Do NOT subtract the current posterior here.
     return { left, right, leftPosterior, rightPosterior,
       minimum, maximum, undefinedCount, directions,
-      current, present, reverse, equality, status };
+      current, present, reverse, equality, status, breakEvens:roots };
+  }
+
+  // Algebraic numerator of posterior-minus-prior. A small (nonzero)
+  // probability change is not automatically a break-even point.
+  // Null means conditioning is impossible, so it must not produce a tick.
+  function zeroNumerator(s, group) {
+    if (group === 'bayes') {
+      const honest = 1 - s.prior_intent;
+      const failed = s.prior_intent * (1 - s.success_given_intent);
+      const b = s.prior_intent * s.success_given_intent;
+      const h = s.likelihood_honest, f = s.likelihood_failed;
+      const lb = s.likelihood_succeeded;
+      const z = honest * h + failed * f + b * lb;
+      if (!(z > 0)) return null;
+      return b * ((honest + failed) * lb - honest * h - failed * f);
+    }
+    const t = s.know_restricted * independentSearch(
+      s.rarity_bits, s.restricted_bits, s.compute_bits);
+    const u = s.know_unrestricted * independentSearch(
+      s.rarity_bits, s.unrestricted_bits, s.compute_bits);
+    const a = s.prior_restricted, rho = s.publish_failed;
+    const pt = t + (1 - t) * rho;
+    const pu = u + (1 - u) * rho;
+    if (!(a > 0) || !(pt > 0) || !(a * pt + (1 - a) * pu > 0)) return null;
+    if (rho === 0 || a === 1) return 0;
+    const kT = s.know_restricted, kU = s.know_unrestricted;
+    const nT = Math.min(s.restricted_bits,s.compute_bits);
+    const nU = Math.min(s.unrestricted_bits,s.compute_bits);
+    if (t === u && kT === kU && kT > 0 && nT !== nU) {
+      // Even if floating point rounds two saturated success chances to 1,
+      // their exact mathematical ordering follows the effective trial count.
+      return (nT > nU ? 1 : -1) * Number.MIN_VALUE;
+    }
+    return rho * (1 - a) * (t - u);
+  }
+
+  function breakEvens(s, spec) {
+    const count = Math.round((spec.max - spec.min) / spec.step);
+    const xs = Array.from({length:count+1}, (_,i)=>
+      Number((spec.min + i * spec.step).toFixed(9)));
+    const signed = xs.map(x => zeroNumerator({...s,[spec.key]:x}, spec.group));
+    const regions = [];
+    let i = 0;
+    while (i < xs.length) {
+      if (signed[i] !== null && signed[i] === 0) {
+        let end = i;
+        while (end + 1 < xs.length && signed[end+1] === 0) end += 1;
+        regions.push({start:xs[i],end:xs[end],interpolated:false});
+        i = end + 1;
+      } else i += 1;
+    }
+    for (let j=0;j<xs.length-1;j++) {
+      const left = signed[j], right = signed[j+1];
+      if (left === null || right === null || left === 0 || right === 0 ||
+          (left > 0) === (right > 0)) continue;
+      let low = xs[j], high = xs[j+1];
+      const lowPositive = left > 0;
+      for (let iteration=0;iteration<55;iteration++) {
+        const mid = (low + high) / 2;
+        if (mid === low || mid === high) break;
+        const value = zeroNumerator({...s,[spec.key]:mid},spec.group);
+        if (value === null) break;
+        if (value === 0) {low=high=mid;break;}
+        if ((value > 0) === lowPositive) low = mid;
+        else high = mid;
+      }
+      const root = (low + high) / 2;
+      if (zeroNumerator({...s,[spec.key]:root},spec.group) !== null)
+        regions.push({start:root,end:root,interpolated:true});
+    }
+    return regions.sort((a,b)=>a.start-b.start);
   }
 
   function createText(tag, css, text) {
@@ -3893,6 +3973,10 @@ return Plotly;
         left.id = 'left-' + spec.key;
         const sliderWrap = createText('div', 'dial-slider-wrap', '');
         sliderWrap.append(slider);
+        const ticks = createText('div', 'break-even-track', '');
+        ticks.id = 'break-even-' + spec.key;
+        ticks.setAttribute('aria-hidden', 'true');
+        sliderWrap.append(ticks);
         const right = createText('div', 'dial-extreme', '');
         right.id = 'right-' + spec.key;
         rail.append(left, sliderWrap, right);
@@ -3902,7 +3986,9 @@ return Plotly;
         const range = createText('span', 'dial-range', '');
         range.id = 'range-' + spec.key;
         statusRow.append(status, range);
-        wrap.append(head, rail, statusRow);
+        const breakEvenNote = createText('div','break-even-note','');
+        breakEvenNote.id = 'break-even-note-' + spec.key;
+        wrap.append(head, rail, breakEvenNote, statusRow);
         target.appendChild(wrap);
       }
     }
@@ -3933,6 +4019,53 @@ return Plotly;
     element.replaceChildren(title, content, detail);
   }
 
+  function formatLocation(number, spec) {
+    const isInteger = spec.step >= 1;
+    if (isInteger && Math.abs(number - Math.round(number)) < 1e-7)
+      return String(Math.round(number));
+    return number.toFixed(isInteger ? 2 : 3).replace(/0+$/, '').replace(/\.$/, '');
+  }
+
+  function renderBreakEven(spec, regions) {
+    const target = document.getElementById('break-even-' + spec.key);
+    target.replaceChildren();
+    const slider = document.getElementById('slider-' + spec.key);
+    const describe = document.getElementById('break-even-note-' + spec.key);
+    const fraction = x => 100 * (x - spec.min) / (spec.max - spec.min);
+    const notes = [];
+    for (const region of regions) {
+      const isRange = region.end > region.start + 1e-9;
+      const start = formatLocation(region.start, spec);
+      const end = formatLocation(region.end, spec);
+      if (isRange) {
+        const shade = createText('span', 'break-even-band', '');
+        shade.style.left = fraction(region.start) + '%';
+        shade.style.width = (fraction(region.end) - fraction(region.start)) + '%';
+        target.append(shade);
+        notes.push('Equal update on [' + start + ', ' + end + ']');
+      } else {
+        notes.push((region.interpolated ? 'Approximate break-even: ' : 'Break-even: ') + start);
+      }
+      const endpoints = isRange ? [region.start,region.end] : [region.start];
+      for (const x of endpoints) {
+        const at = fraction(x);
+        const tick = createText('span', 'break-even-tick', '');
+        tick.style.left = at + '%';
+        tick.dataset.value = String(x);
+        if (!isRange || Math.abs(region.end - region.start) > spec.step*2) {
+          const label = createText('span', 'break-even-label',
+            (region.interpolated ? '\u2248' : '') + formatLocation(x, spec));
+          if (at < 12) label.classList.add('at-start');
+          if (at > 88) label.classList.add('at-end');
+          tick.append(label);
+        }
+        target.append(tick);
+      }
+    }
+    describe.textContent = notes.length ? notes.join(' · ') : 'No break-even point in range';
+    slider.setAttribute('aria-describedby', describe.id);
+  }
+
   function renderSweepIndicators(config, values) {
     for (const group of GROUPS) {
       const specs = config.specs.filter(item => item.group === group);
@@ -3947,6 +4080,7 @@ return Plotly;
           sensitivity.leftPosterior, sensitivity.left, group);
         renderExtreme('right-' + spec.key, 'MAX', spec.max,
           sensitivity.rightPosterior, sensitivity.right, group);
+        renderBreakEven(spec, sensitivity.breakEvens);
         const status = document.getElementById('status-' + spec.key);
         status.textContent = sensitivity.status;
         status.className = 'dial-status ' + (sensitivity.reverse ? 'flip' :
@@ -4097,7 +4231,8 @@ return Plotly;
   }
 
   root.SeedBayesOffline = {
-    finiteBayes, methodUpdate, independentSearch, direction, formatter, sweep, mount
+    finiteBayes, methodUpdate, independentSearch, direction, formatter,
+    zeroNumerator, breakEvens, sweep, mount
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 </script>
