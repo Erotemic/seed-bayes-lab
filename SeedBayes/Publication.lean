@@ -33,7 +33,7 @@ theorem joint_restricted_publication (alpha st rho : ℝ)
     (alpha * st) / (alpha * publicationMass st rho) =
       restrictedPublishedBackdoor st rho := by
   unfold restrictedPublishedBackdoor
-  field_simp [hAlpha, hPt] <;> ring
+  field_simp [hAlpha, hPt]
 
 /-- Exact difference used by Python `MethodUpdate.delta` and the offline JS.
     Notice that `alpha` does NOT disappear from the mixed denominator. -/

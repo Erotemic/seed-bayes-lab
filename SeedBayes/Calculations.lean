@@ -82,7 +82,6 @@ theorem bayes_delta_formula (p : Prior) (e : Likelihood)
           evidenceMass p e := by
       unfold bayesDelta posteriorBackdoor priorBackdoor
       field_simp [hE]
-      ring
     _ = bayesDeltaNumerator p e / evidenceMass p e := by
       rw [hAux]
       rfl
