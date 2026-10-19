@@ -1,0 +1,10 @@
+# Used as the argument to magnet.theory.cards.report_from_card().
+# This is a static theory-link specification, not a MAGNET evaluation job.
+theory:
+  indexes:
+    - index.yaml
+  empirical_sources:
+    - ../src/seed_bayes_lab/model.py
+    - ../src/seed_bayes_lab/search.py
+    - ../src/seed_bayes_lab/sensitivity.py
+    - ../tests/test_formal_conformance.py

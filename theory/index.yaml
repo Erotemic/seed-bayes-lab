@@ -1,0 +1,113 @@
+schema_version: 1
+formalization:
+  system: lean4
+entries:
+  - id: SeedBayes.Bayes.PriorConstruction
+    kind: definition
+    declaration: SeedBayes.priorOfIntent
+    source_path: SeedBayes/Calculations.lean
+    statement: Construct prior masses for the honest, failed, and successful worlds.
+    premises:
+      - id: hIntent0
+        type: 0 <= intent
+      - id: hIntent1
+        type: intent <= 1
+      - id: hSuccess0
+        type: 0 <= success
+      - id: hSuccess1
+        type: success <= 1
+
+  - id: SeedBayes.Bayes.Posterior
+    kind: definition
+    declaration: SeedBayes.posteriorBackdoor
+    source_path: SeedBayes/Finite.lean
+    statement: Posterior probability of a planted backdoor given possible evidence E.
+
+  - id: SeedBayes.Bayes.UpdateDelta
+    kind: theorem
+    declaration: SeedBayes.bayes_delta_formula
+    source_path: SeedBayes/Calculations.lean
+    statement: The signed Bayesian update equals its polynomial numerator divided by evidence mass.
+    premises:
+      - id: hE
+        type: evidenceMass p e != 0
+        statement: Conditioning on E requires nonzero evidence probability.
+
+  - id: SeedBayes.Bayes.BreakEven
+    kind: theorem
+    declaration: SeedBayes.bayes_break_even_iff
+    source_path: SeedBayes/Calculations.lean
+    statement: Exact conditions for equality of the posterior and prior of B.
+    premises:
+      - id: hE
+        type: 0 < evidenceMass p e
+        statement: The observation must have positive probability.
+
+  - id: SeedBayes.Bayes.Sign
+    kind: theorem
+    declaration: SeedBayes.bayes_delta_negative_iff
+    source_path: SeedBayes/Calculations.lean
+    statement: A negative update is equivalent to a negative update numerator.
+    premises:
+      - id: hE
+        type: 0 < evidenceMass p e
+
+  - id: SeedBayes.Search.Independent
+    kind: definition
+    declaration: SeedBayes.independentSuccess
+    source_path: SeedBayes/Search.lean
+    statement: At least one success after n independent Bernoulli trials.
+
+  - id: SeedBayes.Search.Effective
+    kind: definition
+    declaration: SeedBayes.effectiveSuccess
+    source_path: SeedBayes/Search.lean
+    statement: Search success limited by the minimum of candidate count and compute budget.
+
+  - id: SeedBayes.Search.Planted
+    kind: definition
+    declaration: SeedBayes.plantedSuccess
+    source_path: SeedBayes/Search.lean
+    statement: Probability of knowing an attack multiplied by conditional search success.
+
+  - id: SeedBayes.Publication.Mass
+    kind: definition
+    declaration: SeedBayes.publicationMass
+    source_path: SeedBayes/Publication.lean
+    statement: Probability of publication given attack success and failed-publication rate.
+
+  - id: SeedBayes.Publication.Before
+    kind: definition
+    declaration: SeedBayes.mixturePublishedBackdoor
+    source_path: SeedBayes/Publication.lean
+    statement: Probability of a planted backdoor conditional on publication.
+
+  - id: SeedBayes.Publication.After
+    kind: definition
+    declaration: SeedBayes.restrictedPublishedBackdoor
+    source_path: SeedBayes/Publication.lean
+    statement: Probability of a planted backdoor conditional on publication and method T.
+
+  - id: SeedBayes.Publication.Delta
+    kind: theorem
+    declaration: SeedBayes.publication_delta_formula
+    source_path: SeedBayes/Publication.lean
+    statement: Exact signed change upon learning method T among published curves.
+    premises:
+      - id: hPt
+        type: publicationMass st rho != 0
+        statement: The restricted method must have nonzero publication probability.
+      - id: hJ
+        type: mixturePublicationMass alpha st su rho != 0
+        statement: Overall publication probability must be nonzero.
+
+  - id: SeedBayes.Publication.BreakEven
+    kind: theorem
+    declaration: SeedBayes.publication_break_even_iff
+    source_path: SeedBayes/Publication.lean
+    statement: Break-even occurs when rho is zero, alpha is one, or st equals su.
+    premises:
+      - id: hPt
+        type: publicationMass st rho != 0
+      - id: hJ
+        type: mixturePublicationMass alpha st su rho != 0

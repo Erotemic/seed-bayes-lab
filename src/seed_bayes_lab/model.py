@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
+import magnet_theory as theory
+
 
 def _prob(name: str, value: float) -> float:
     value = float(value)
@@ -45,6 +47,14 @@ class Prior:
             raise ValueError("The three prior masses must sum to one")
 
     @classmethod
+    @theory.approximates(
+        "SeedBayes.Bayes.PriorConstruction",
+        note="Floating-point construction of the exact three-world prior",
+    )
+    @theory.checks("SeedBayes.Bayes.PriorConstruction::hIntent0")
+    @theory.checks("SeedBayes.Bayes.PriorConstruction::hIntent1")
+    @theory.checks("SeedBayes.Bayes.PriorConstruction::hSuccess0")
+    @theory.checks("SeedBayes.Bayes.PriorConstruction::hSuccess1")
     def from_intent_success(cls, intent: float, success_given_intent: float) -> Prior:
         """Build a prior from P(intent) and P(backdoor | intent)."""
         intent = _prob("intent", intent)
@@ -162,6 +172,14 @@ class Update:
         return self.likelihoods.succeeded / denominator
 
     @property
+    @theory.approximates(
+        "SeedBayes.Bayes.UpdateDelta",
+        note="Numerical difference; theorem equates it to a polynomial numerator over P(E)",
+    )
+    @theory.assumes(
+        "SeedBayes.Bayes.UpdateDelta::hE",
+        note="Update objects produced by update() have positive evidence probability",
+    )
     def delta_backdoor(self) -> float:
         return self.posterior_backdoor - self.prior_backdoor
 
@@ -174,6 +192,10 @@ class Update:
         return "unchanged"
 
 
+@theory.approximates(
+    "SeedBayes.Bayes.Posterior",
+    note="Floating-point normalization of the finite Bayes model",
+)
 def update(prior: Prior, likelihoods: Likelihoods) -> Update:
     """Bayesian update for the observed evidence, conditioned on occurrence.
 
@@ -192,5 +214,9 @@ def update(prior: Prior, likelihoods: Likelihoods) -> Update:
     return Update(prior, likelihoods, z, posterior)
 
 
+@theory.approximates(
+    "SeedBayes.Bayes.Posterior",
+    note="Computes the corresponding floating-point posterior, with invalid conditioning rejected",
+)
 def posterior_backdoor(prior: Prior, likelihoods: Likelihoods) -> float:
     return update(prior, likelihoods).posterior_backdoor

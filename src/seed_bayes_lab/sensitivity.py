@@ -16,6 +16,8 @@ from dataclasses import dataclass
 import math
 from typing import Mapping
 
+import magnet_theory as theory
+
 from seed_bayes_lab.model import Likelihoods, Prior, update
 from seed_bayes_lab.search import method_observation_update, planted_success, publish_probability
 
@@ -145,6 +147,26 @@ class BreakEvenRegion:
         return self.end > self.start + 1e-9
 
 
+@theory.approximates(
+    "SeedBayes.Bayes.BreakEven",
+    note="UI root finding evaluates the Lean Bayes delta numerator in floating point",
+)
+@theory.checks(
+    "SeedBayes.Bayes.BreakEven::hE",
+    note="Returns None if evidence mass is zero in the Bayes branch",
+)
+@theory.approximates(
+    "SeedBayes.Publication.BreakEven",
+    note="UI root finding evaluates rho*(1-alpha)*(st-su) in floating point",
+)
+@theory.checks(
+    "SeedBayes.Publication.BreakEven::hPt",
+    note="Returns None for zero P(J|T) in the publication branch",
+)
+@theory.checks(
+    "SeedBayes.Publication.BreakEven::hJ",
+    note="Returns None for zero P(J) in the publication branch",
+)
 def _zero_numerator(values: Mapping[str, float | int], group: str) -> float | None:
     """Numerator of the signed evidence update, with conditioning checked.
 

@@ -175,6 +175,48 @@ that formal verification is complete. There are no `sorry` or axioms added.
 See [docs/proof-map.md](docs/proof-map.md) for a theorem-to-function audit
 and the remaining boundaries of formalization.
 
+
+### Source-level theory links (MAGNET)
+
+Python computations and conformance tests now carry static
+[`aiq-magnet-theory`](https://pypi.org/project/aiq-magnet-theory/)
+annotations. This tiny runtime dependency consists of **no-op** decorators:
+
+```python
+import magnet_theory as theory
+
+@theory.approximates("SeedBayes.Search.Independent")
+def independent_search_success(rarity_bits: float, trials_bits: float) -> float:
+    ...
+```
+
+A matching [MAGNET theory index](theory/index.yaml) resolves stable annotation
+IDs to exact Lean declarations and named proof premises; see
+[the mapping spec](theory/link-spec.yaml). For example,
+`SeedBayes.Bayes.UpdateDelta::hE` records the assumption that the evidence
+probability is nonzero. The source distinguishes `checks` (runtime guard),
+`assumes` (relies on an obligation proved/checked elsewhere), `approximates`
+(floating-point or bits-interpolated code), and `tests` (numeric conformance
+against rational Lean fixtures).
+
+The full MAGNET package adds a static extractor and premise-coverage report,
+without executing annotated application code. If it is installed, generate a
+report using:
+
+```bash
+python scripts/report_theory.py --output theory/report.json
+```
+
+The core `aiq-magnet-theory` package is installed by default; **full
+`aiq-magnet` is optional** and only needed to generate that report.
+`uv run pytest` validates the index against current Lean declarations and
+Python annotations without requiring the full MAGNET package.
+
+**Scope:** these annotations record which claims and premises code relates to.
+They do not prove Python semantics, floating-point correctness, or the
+historical likelihood assumptions. The strict Lean-plus-Python/JavaScript
+fixture checks described above remain the executable conformance gate.
+
 ## Observed evidence versus assumed likelihoods
 
 The event **E** shown in the app is the reconstruction reported by Anthropic
@@ -214,10 +256,10 @@ Even with P(intent) = 1, evidence can change P(successful backdoor).
 
 For a nondegenerate prior and evidence with positive probability:
 
-\[
+$$
  P(B\mid E)<P(B)\quad\Longleftrightarrow\quad
  P(E\mid B)<P(E\mid\neg B).
-\]
+$$
 
 The theorem `posterior_lt_prior_iff_likelihood_ratio` states this for the
 finite model. The input likelihoods are not derived from the seed discovery:
@@ -227,10 +269,10 @@ For a separately assumed *ex ante* choice of generator, write `s_T` for
 conditional attack success with the timestamp method and `s_U` for the
 alternative. If `alpha` is the prior chance of T, then:
 
-\[
+$$
  s_T - (\alpha s_T +(1-\alpha)s_U)
    = (1-\alpha)(s_T-s_U).
-\]
+$$
 
 Thus the update is nonpositive when `s_T <= s_U`. This theorem needs no model
 of vulnerability density, but the **ordering of conditional success rates is

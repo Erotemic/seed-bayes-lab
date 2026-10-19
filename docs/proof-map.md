@@ -40,6 +40,29 @@ and JavaScript also offer a real-valued interpolation in bits, implemented by
 `expm1`/`log1p`; the floating-point interpolation and chart root detection
 are **not** fully formalized in Lean.
 
+
+## MAGNET static source annotations
+
+The [MAGNET index](../theory/index.yaml) binds stable statement IDs to local
+Lean declarations. The [link specification](../theory/link-spec.yaml) tells the
+full MAGNET static analyzer which Python source files to scan. References such
+as `SeedBayes.Publication.Delta::hPt` identify named hypotheses, not guessed
+source line numbers.
+
+The production modules use `@theory.approximates(...)` because the Lean
+identities are exact real arithmetic while the implementation evaluates them
+using floating-point operations. Conformance tests use `@theory.tests(...)`
+to point to the claims exercised by Lean-proved rational fixtures. `assumes`
+marks proof obligations that a numerical result depends upon; `checks` marks
+explicit domain guards. Neither relation means MAGNET has proved Python
+implements Lean.
+
+`aiq-magnet-theory` supplies these inert decorators without pulling in the
+full MAGNET toolkit. For a full static link and premise-coverage report, install
+`aiq-magnet` separately and run `python scripts/report_theory.py`.
+The repository's normal pytest suite checks the links without requiring that
+optional dependency.
+
 ## The cross-language proof bridge
 
 `tests/formal_cases.json` specifies exact rational input parameters for:

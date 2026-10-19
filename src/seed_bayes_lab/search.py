@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
+import magnet_theory as theory
+
 
 def _unit_interval(name: str, p: float) -> float:
     p = float(p)
@@ -24,6 +26,10 @@ def _nonnegative_bits(name: str, bits: float) -> float:
     return bits
 
 
+@theory.approximates(
+    "SeedBayes.Search.Independent",
+    note="Lean counts natural trials; Python additionally interpolates noninteger log2 trial counts",
+)
 def independent_search_success(rarity_bits: float, trials_bits: float) -> float:
     """Numerically stable 1 - (1 - 2^(-k))^(2^b).
 
@@ -40,6 +46,10 @@ def independent_search_success(rarity_bits: float, trials_bits: float) -> float:
     return -math.expm1(math.exp2(b) * math.log1p(-q))
 
 
+@theory.approximates(
+    "SeedBayes.Search.Effective",
+    note="Python uses min of log2 trial counts, an extension of Lean's natural count model",
+)
 def effective_search_success(
     rarity_bits: float, freedom_bits: float, budget_bits: float
 ) -> float:
@@ -49,6 +59,10 @@ def effective_search_success(
     return independent_search_success(rarity_bits, min(freedom, budget))
 
 
+@theory.approximates(
+    "SeedBayes.Search.Planted",
+    note="Implements the assumed independent knowledge-times-search factorization",
+)
 def planted_success(
     rarity_bits: float, freedom_bits: float, budget_bits: float, know_attack: float
 ) -> float:
@@ -58,6 +72,7 @@ def planted_success(
     )
 
 
+@theory.approximates("SeedBayes.Publication.Mass")
 def publish_probability(success: float, publish_if_failed: float) -> float:
     """P(published) if successful attempts always publish.
 
@@ -89,6 +104,18 @@ class MethodUpdate:
     after: float | None
 
     @property
+    @theory.approximates(
+        "SeedBayes.Publication.Delta",
+        note="Stable floating-point evaluation of the Lean rational identity",
+    )
+    @theory.assumes(
+        "SeedBayes.Publication.Delta::hPt",
+        note="before/after are defined only after method_observation_update validates P(J|T)>0",
+    )
+    @theory.assumes(
+        "SeedBayes.Publication.Delta::hJ",
+        note="before/after are defined only after method_observation_update validates P(J)>0",
+    )
     def delta(self) -> float | None:
         if self.before is None or self.after is None:
             return None
@@ -109,6 +136,14 @@ class MethodUpdate:
         return self.probability_published_and_restricted / self.probability_published
 
 
+@theory.approximates(
+    "SeedBayes.Publication.Before",
+    note="Returns P(B|J) in the optional before field",
+)
+@theory.approximates(
+    "SeedBayes.Publication.After",
+    note="Returns P(B|J,T) in the optional after field; requires P(T)>0",
+)
 def method_observation_update(
     prior_restricted: float,
     restricted_success: float,

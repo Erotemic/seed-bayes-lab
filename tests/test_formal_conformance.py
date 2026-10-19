@@ -17,6 +17,7 @@ import subprocess
 import sys
 
 import pytest
+import magnet_theory as theory
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
 from seed_bayes_lab.search import independent_search_success, method_observation_update
@@ -52,6 +53,10 @@ def test_fixture_proofs_are_synchronized():
     )
 
 
+@theory.tests(
+    "SeedBayes.Bayes.UpdateDelta",
+    note="Exact Lean fixture values compared against production Python floats",
+)
 def test_lean_proved_bayesian_cases_against_python():
     for c in _cases()['bayes']:
         i, s, lh, lf, lb = (float(Fraction(c[x])) for x in
@@ -74,6 +79,10 @@ def test_lean_proved_bayesian_cases_against_python():
         _close(_zero_numerator(state, 'bayes'), expected['numerator'])
 
 
+@theory.tests(
+    "SeedBayes.Publication.Delta",
+    note="Rational proof fixtures compared with publication-conditioned Python output",
+)
 def test_lean_proved_publication_cases_against_python():
     for c in _cases()['publication']:
         a, st, su, rho = (float(Fraction(c[x])) for x in
@@ -90,6 +99,10 @@ def test_lean_proved_publication_cases_against_python():
         _close(rho * (1 - a) * (st - su), expected['numerator'])
 
 
+@theory.tests(
+    "SeedBayes.Search.Independent",
+    note="Natural trial count instances proved in Lean, then evaluated in Python",
+)
 def test_lean_proved_independent_search_cases_against_python():
     for c in _cases()['search']:
         actual = independent_search_success(c['k'], min(c['freedom'], c['budget']))
@@ -97,6 +110,18 @@ def test_lean_proved_independent_search_cases_against_python():
 
 
 @pytest.mark.skipif(shutil.which('node') is None, reason='Node is optional')
+@theory.tests(
+    "SeedBayes.Bayes.Posterior",
+    note="Offline browser kernel compared against exact Lean fixtures",
+)
+@theory.tests(
+    "SeedBayes.Publication.Delta",
+    note="Offline publication kernel compared against exact Lean fixtures",
+)
+@theory.tests(
+    "SeedBayes.Search.Independent",
+    note="Offline search kernel compared against exact Lean fixtures",
+)
 def test_lean_proved_cases_against_offline_javascript():
     cases = _cases()
     js = ROOT / 'src/seed_bayes_lab/offline.js'

@@ -10,11 +10,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Seed Bayes Lab contributors" }]
-dependencies = ["numpy>=1.24", "plotly>=5.18"]
+dependencies = ["numpy>=1.24", "plotly>=5.18", "aiq-magnet-theory>=0.1.0,<0.2"]
 
 [project.optional-dependencies]
 app = ["streamlit>=1.35"]
-dev = ["pytest>=7.4"]
+dev = ["pytest>=7.4", "PyYAML>=6.0"]
 
 [project.scripts]
 seed-bayes-demo = "seed_bayes_lab.demo:main"
