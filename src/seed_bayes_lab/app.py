@@ -5,18 +5,43 @@ from __future__ import annotations
 import streamlit as st
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
+from seed_bayes_lab.sensitivity import (
+    SLIDER_SPECS, BAYES_SLIDERS, SEARCH_SLIDERS,
+    analyze_slider, format_delta_pp, direction,
+)
 from seed_bayes_lab.evidence import (
-    EVIDENCE_TITLE, EVIDENCE_OBSERVATION, EVIDENCE_LIMITS,
+    EVIDENCE_TITLE, EVIDENCE_SHORT, EVIDENCE_OBSERVATION, EVIDENCE_LIMITS,
     EVIDENCE_LIKELIHOOD_NOTE, METHOD_OBSERVATION,
     evidence_sources_markdown,
 )
 from seed_bayes_lab.ui_state import initialize_assumptions, reset_assumptions
+from seed_bayes_lab.glossary import (
+    BAYES_EVENTS, BAYES_QUANTITIES, SEARCH_EVENTS, SEARCH_QUANTITIES,
+    BAYES_PARAMETERS, SEARCH_PARAMETERS,
+)
 from seed_bayes_lab.plots import direction_heatmap, evidence_sweep, search_sweep
 from seed_bayes_lab.search import method_observation_update, planted_success
 
 st.set_page_config(page_title="Seed Bayes Lab", page_icon="∴", layout="wide")
 st.title("Seed Bayes Lab")
 st.caption("Explore assumptions. No slider default is an empirical estimate of a NIST backdoor.")
+st.markdown("""
+<style>
+.endpoint-card{border:1px solid #dbe3eb;border-radius:10px;padding:7px 12px;
+    min-height:82px;background:transparent;color:inherit}
+.endpoint-card.right{text-align:right}
+.endpoint-head{font-size:.70rem;font-weight:650;opacity:.72;letter-spacing:.035em}
+.endpoint-main{display:flex;gap:8px;align-items:center;margin:3px 0}
+.endpoint-card.right .endpoint-main{justify-content:flex-end}
+.endpoint-icon{display:inline-flex;align-items:center;justify-content:center;
+    width:27px;height:27px;border-radius:50%;font-size:18px;flex-shrink:0;
+    background:#ebedf0;color:#45556b;font-weight:750}
+.endpoint-card.decrease .endpoint-icon{background:#dcece6;color:#206b54}
+.endpoint-card.increase .endpoint-icon{background:#fae5e0;color:#a54832}
+.endpoint-number{font-size:1.0rem;font-variant-numeric:tabular-nums;font-weight:700}
+.endpoint-posterior{font-size:.72rem;opacity:.72;font-variant-numeric:tabular-nums}
+</style>
+""", unsafe_allow_html=True)
 
 initialize_assumptions(st.session_state)
 st.button(
@@ -26,24 +51,90 @@ st.button(
     args=(st.session_state,),
     help="Restore every slider in both interactive tabs to its initial value.",
 )
-st.info(f"**{EVIDENCE_TITLE}**\n\n{EVIDENCE_OBSERVATION}")
-st.caption(EVIDENCE_LIMITS)
-st.markdown(evidence_sources_markdown())
+st.info(f"**{EVIDENCE_TITLE}**\n\n{EVIDENCE_SHORT}")
+with st.expander("Full evidence definition, limitations and sources"):
+    st.markdown(EVIDENCE_OBSERVATION)
+    st.markdown(EVIDENCE_LIMITS)
+    st.markdown(evidence_sources_markdown())
 
-bayes, search, assumptions = st.tabs(["Evidence / Bayes", "Search & publication", "Interpretation"])
+
+def _endpoint_card(title: str, position: float | int, posterior: float | None,
+                   posterior_change: float | None, after_label: str, align: str) -> str:
+    """Compact, icon-led change in posterior from the current dial settings."""
+    move = direction(posterior_change)
+    icon = {"decrease": "↘", "increase": "↗", "unchanged": "→",
+            "undefined": "?"}[move]
+    formatted = format_delta_pp(posterior_change)
+    number = formatted.removeprefix("↘ ").removeprefix("↗ ")
+    result = "undefined" if posterior is None else f"{posterior:.2%}"
+    return (
+        f'<div class="endpoint-card {align} {move}" role="group" '
+        f'aria-label="{title} {position}; {formatted}; '
+        f'{after_label} at endpoint {result}">'
+        f'<div class="endpoint-head">{title} {position}</div>'
+        f'<div class="endpoint-main"><span class="endpoint-icon" aria-hidden="true">'
+        f'{icon}</span><span class="endpoint-number">{number}</span></div>'
+        f'<div class="endpoint-posterior">{after_label} = {result}</div></div>'
+    )
+
+
+def sensitivity_slider(key: str) -> float | int:
+    """Slider with large effect icons immediately below its left/right ends."""
+    spec = SLIDER_SPECS[key]
+    value = st.slider(spec.label, spec.minimum, spec.maximum, step=spec.step, key=key)
+    sens = analyze_slider(st.session_state, key)
+    after_label = "P(B | E)" if spec.group == "bayes" else "P(B | J,T)"
+    left, right = st.columns(2)
+    with left:
+        st.markdown(_endpoint_card("MIN", spec.minimum, sens.left_posterior,
+                                   sens.left_posterior_change, after_label, "left"),
+                    unsafe_allow_html=True)
+    with right:
+        st.markdown(_endpoint_card("MAX", spec.maximum, sens.right_posterior,
+                                   sens.right_posterior_change, after_label, "right"),
+                    unsafe_allow_html=True)
+    st.caption(
+        f"**{sens.status}** · Full evidence-update Δ range: "
+        f"{format_delta_pp(sens.minimum_delta)} to {format_delta_pp(sens.maximum_delta)}"
+        + (f" · {sens.undefined_positions} undefined setting(s)"
+           if sens.undefined_positions else "")
+    )
+    return value
+
+
+def show_flip_summary(keys: tuple[str, ...]) -> None:
+    sensitivities = [analyze_slider(st.session_state, key) for key in keys]
+    flipped = [s.spec.label for s in sensitivities if s.can_reverse]
+    current = sensitivities[0].current_direction
+    st.info(
+        f"**Current direction: {current}.** "
+        f"{len(flipped)} of {len(keys)} controls can reverse it "
+        "by themselves while other inputs stay fixed. "
+        + ("Reversing controls: " + ", ".join(flipped) + "." if flipped
+           else "No individual control can reverse it.")
+    )
+
+
+bayes, search, glossary, assumptions = st.tabs([
+    "Evidence / Bayes", "Search & publication", "Notation glossary", "Interpretation",
+])
 
 with bayes:
     st.subheader("Three-world finite model")
     st.caption(EVIDENCE_LIKELIHOOD_NOTE)
+    st.caption("B denotes a deliberately planted backdoor; I denotes intent to plant one.")
+    st.caption("Endpoint arrows: change in P(B | E) from the CURRENT posterior when moving only that slider to MIN/MAX. The 'can reverse' indicator separately scans Δupdate = P(B | E) − P(B). All changes are in percentage points.")
     st.markdown("Worlds: **honest**, **attempted but failed**, **successfully planted backdoor**.")
     left, right = st.columns([1, 2], gap="large")
     with left:
-        intent = st.slider("Prior P(malicious intent)", 0.0, 1.0, step=0.01, key="prior_intent")
-        success = st.slider("P(successful backdoor | intent)", 0.0, 1.0, step=0.01, key="success_given_intent")
+        intent = sensitivity_slider("prior_intent")
+        st.caption("The 0.50 default is symmetric for illustration, not an estimated historical probability.")
+        success = sensitivity_slider("success_given_intent")
         st.markdown("**Likelihood of the discovered evidence**")
-        honest_l = st.slider("P(E | honest)", 0.0, 1.0, step=0.01, key="likelihood_honest")
-        failed_l = st.slider("P(E | malicious attempt, failed)", 0.0, 1.0, step=0.01, key="likelihood_failed")
-        succeeded_l = st.slider("P(E | successfully backdoored)", 0.0, 1.0, step=0.01, key="likelihood_succeeded")
+        honest_l = sensitivity_slider("likelihood_honest")
+        failed_l = sensitivity_slider("likelihood_failed")
+        succeeded_l = sensitivity_slider("likelihood_succeeded")
+    show_flip_summary(tuple(spec.key for spec in BAYES_SLIDERS))
     prior = Prior.from_intent_success(intent, success)
     likelihoods = Likelihoods(honest_l, failed_l, succeeded_l)
     with right:
@@ -53,10 +144,13 @@ with bayes:
             st.error("The assumed evidence has probability zero; conditioning is undefined.")
         else:
             c1, c2, c3 = st.columns(3)
-            c1.metric("P(backdoor) before", f"{result.prior_backdoor:.2%}")
-            c2.metric("P(backdoor) after", f"{result.posterior_backdoor:.2%}",
+            c1.metric("P(B)", f"{result.prior_backdoor:.2%}")
+            c1.caption("Before observing E")
+            c2.metric("P(B | E)", f"{result.posterior_backdoor:.2%}",
                       delta=f"{result.delta_backdoor:+.2%}", delta_color="inverse")
-            c3.metric("P(intent) after", f"{result.posterior_intent:.2%}")
+            c2.caption("After observing E")
+            c3.metric("P(I | E)", f"{result.posterior_intent:.2%}")
+            c3.caption("Malicious intent after E")
             st.plotly_chart(evidence_sweep(prior, likelihoods), use_container_width=True)
             st.markdown(
                 f"**Direction:** {result.direction()} · "
@@ -76,17 +170,19 @@ with search:
     )
     a, b, c = st.columns(3)
     with a:
-        t_bits = st.slider("Timestamp method freedom (bits)", 5, 60, step=1, key="restricted_bits")
-        u_bits = st.slider("Alternative method freedom (bits)", 5, 80, step=1, key="unrestricted_bits")
-        compute = st.slider("Evaluation budget (bits)", 5, 80, step=1, key="compute_bits")
+        t_bits = sensitivity_slider("restricted_bits")
+        u_bits = sensitivity_slider("unrestricted_bits")
+        compute = sensitivity_slider("compute_bits")
     with b:
-        rarity = st.slider("Secret vulnerability rarity k (bits)", 5, 80, step=1, key="rarity_bits")
-        know_t = st.slider("P(attack known | method T)", 0.0, 1.0, step=0.01, key="know_restricted")
-        know_u = st.slider("P(attack known | method U)", 0.0, 1.0, step=0.01, key="know_unrestricted")
+        rarity = sensitivity_slider("rarity_bits")
+        know_t = sensitivity_slider("know_restricted")
+        know_u = sensitivity_slider("know_unrestricted")
     with c:
-        alpha = st.slider("Prior P(method T) before publication", 0.0, 1.0, step=0.01, key="prior_restricted")
-        rho = st.slider("P(publish | failed attempt)", 0.0, 1.0, step=0.01, key="publish_failed")
+        alpha = sensitivity_slider("prior_restricted")
+        rho = sensitivity_slider("publish_failed")
         st.caption("P(publish | successful attempt) is fixed at 100% in this toy model.")
+    st.caption("Endpoint arrows here change P(B | published, T) relative to its CURRENT value. Reversal still concerns Δupdate = P(B | published, T) − P(B | published). This conditions on T, not the historical observation E.")
+    show_flip_summary(tuple(spec.key for spec in SEARCH_SLIDERS))
     st_t = planted_success(rarity, t_bits, compute, know_t)
     st_u = planted_success(rarity, u_bits, compute, know_u)
     comparison = method_observation_update(alpha, st_t, st_u, rho)
@@ -103,6 +199,38 @@ with search:
         "and method choice before success is known. A hypothetical direct construction "
         "or method-dependent attack capability may violate those assumptions."
     )
+
+def _show_entries(entries) -> None:
+    st.table([{"Notation": entry.symbol, "Exact definition": entry.definition,
+              "Qualification": entry.qualification} for entry in entries])
+
+
+def _show_parameters(entries) -> None:
+    st.table([{"Slider / notation": f"{entry.symbol}  ·  {SLIDER_SPECS[entry.key].label}",
+              "Exact meaning": entry.definition, "Assumptions": entry.qualification}
+              for entry in entries])
+
+
+with glossary:
+    st.subheader("Event notation and model assumptions")
+    st.caption("The two models use different observations. E is observed historical provenance; T is a hypothetical actual method restriction. Every number below is a user-chosen assumption, not historical calibration.")
+    st.markdown("### Finite Bayes model · Evidence / Bayes tab")
+    st.markdown("The elementary outcomes are **Ω = {H, F, B}**. Exactly one occurs. The sample space describes a single published curve's historical outcome, not uniformly distributed seeds.")
+    _show_entries(BAYES_EVENTS)
+    st.markdown("#### Probability notation and evidence update")
+    _show_entries(BAYES_QUANTITIES)
+    st.markdown("#### The five Bayesian input dials")
+    _show_parameters(BAYES_PARAMETERS)
+    st.markdown("### Search and publication model · separate tab")
+    st.markdown("Here **I is fixed as true**; the designer chooses T or U before evaluating candidate curves. J represents publication. Conditioning on T after J is not conditioning on E.")
+    _show_entries(SEARCH_EVENTS)
+    st.markdown("#### Search formulas and conditioning")
+    _show_entries(SEARCH_QUANTITIES)
+    st.markdown("#### The eight search-model input dials")
+    _show_parameters(SEARCH_PARAMETERS)
+    st.markdown("### How to read the slider-end icons")
+    st.markdown("**↘ decrease**, **↗ increase**, **→ unchanged**, **? undefined**. The icon at MIN or MAX tells you the difference in the *posterior itself*, relative to the current setting, if you move only that slider to that endpoint. The nearby percentage is the resulting posterior. The separate **CAN REVERSE** indicator concerns the sign of the **evidence update** (posterior minus prior), which is a different quantity. This difference matters especially when a dial also changes P(B).")
+
 
 with assumptions:
     st.markdown("""

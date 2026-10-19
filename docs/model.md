@@ -156,9 +156,47 @@ finite algebra for symbolic real variables (with positivity assumptions).
 Neither numerical tests nor Lean can establish that the historical inputs are
 true. The Lean toolchain was unavailable at authoring time; run `lake build`.
 
-## UI reset behavior
+## Offline/Streamlit interactions and one-dial sensitivity
 
-All Streamlit sliders share explicit defaults in `ui_state.py`. The global
-`Reset all assumptions` button restores all tabs. The self-contained HTML
-demo has a separate reset for the compute-budget slider and axis zoom; it
-provides only a fixed set of scenarios and not the full Streamlit inputs.
+Both the Streamlit interface and the fully self-contained HTML application
+use the same thirteen hypothetical controls, reset defaults, observation
+labels, and probability formulas. The standalone HTML bundles Plotly and
+requires no server. JavaScript numerical calculations are tested against the
+Python `model.py` and `search.py` implementations, including boundary cases.
+
+The prior `P(I)=0.50` is a symmetric illustrative default, not an empirical
+claim and not a unique representation of an absence of knowledge. The two
+Bayesian output labels, `P(B)` and `P(B | E)`, refer to the **same backdoor
+event** before and after conditioning on the stated evidence. In the other
+model the before/after pair explicitly conditions on a published curve.
+
+For every slider `x`, `sensitivity.py` computes
+
+`delta(x) = posterior_backdoor(x) - prior_backdoor(x)`.
+
+All other sliders are held fixed. Every selectable position of `x` (not just
+its endpoints) is enumerated, and the status answers whether the current
+strict sign of `delta` can be reversed by moving only `x`. Equality `delta=0`
+is *not* a reversal. A conditional probability whose denominator is zero is
+reported as undefined and never counted as equality. Small floating-point
+differences below `1e-13` are treated as numerically indistinguishable from
+zero when classifying the sign.
+
+The **left and right endpoint icons** instead show the *movement in the
+posterior itself relative to the current posterior*, in percentage points:
+
+- In the Bayes tab: `P(B | E; x=endpoint) - P(B | E; x=current)`.
+- In the search tab: `P(B | J,T; x=endpoint) - P(B | J,T; x=current)`.
+
+A large arrow and signed value indicate the movement; a secondary label shows
+the absolute resulting posterior probability at that endpoint. The
+color/arrow encode increase, decrease, equality or undefined. This differs
+from the *evidence update* `delta(x) = posterior(x) - prior(x)` used for flip
+detection. Both prior and posterior can change when a prior-parameter slider
+moves, so a positive endpoint arrow can coexist with a negative evidence
+update. The full update range reports the smallest/largest evidence update
+across **all** positions, not merely the endpoints. The glossary tab specifies
+all event definitions and conditioning in the two models.
+
+This sensitivity test is a property of the *current hypothetical model*, not
+historical evidence for or against an actual backdoor.

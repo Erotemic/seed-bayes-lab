@@ -4,6 +4,12 @@ from __future__ import annotations
 
 EVIDENCE_TITLE = "Observed evidence E: reconstructed seed provenance"
 
+EVIDENCE_SHORT = (
+    "Published NIST prime-curve seeds match lrand48 generator streams initialized "
+    "with timestamp-like values from 1997–1998 (P-256 is candidate 1,842). "
+    "This identifies candidate provenance, not whether the selection was impartial."
+)
+
 EVIDENCE_OBSERVATION = (
     "The published seeds for NIST P-192, P-224, P-256, P-384, and P-521 "
     "can be reproduced as outputs of the C-library `lrand48` generator "

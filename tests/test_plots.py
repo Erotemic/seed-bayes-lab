@@ -27,16 +27,18 @@ def test_offline_html_is_self_contained(tmp_path: Path):
     render_html(target)
     html = target.read_text(encoding="utf-8")
     assert "plotly.js" in html.lower()
-    assert "Plotly.animate(gd, null" not in html
     assert "Seed Bayes Lab" in html
-    assert "Compute budget" in html
     assert 'id="reset-all"' in html
-    assert "Plotly.animate(figures[0]" in html
-    assert "Reset interactive charts" in html
+    assert "Reset all assumptions" in html
+    assert "window.SeedBayesOffline.mount(" in html
+    assert "CAN REVERSE" in html
+    assert "Update \\u0394 range:" in html
     assert "Observed evidence E: reconstructed seed provenance" in html
     assert "lrand48" in html
     assert "What E does not establish:" in html
     assert "P(E | honest)" in html
     assert "anthropic.com/research/ecdsa-curve-origins" in html
+    assert "success_given_intent" in html
+    assert "publish_failed" in html
     assert '<script src="https://cdn.plot.ly' not in html
     assert len(html) > 100_000

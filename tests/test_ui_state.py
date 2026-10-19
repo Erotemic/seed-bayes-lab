@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from seed_bayes_lab.evidence import (
-    EVIDENCE_OBSERVATION, EVIDENCE_LIMITS, EVIDENCE_LIKELIHOOD_NOTE,
+    EVIDENCE_SHORT, EVIDENCE_OBSERVATION, EVIDENCE_LIMITS, EVIDENCE_LIKELIHOOD_NOTE,
     METHOD_OBSERVATION, SOURCES,
 )
 from seed_bayes_lab.ui_state import (
@@ -25,6 +25,7 @@ def test_reset_restores_every_control_without_erasing_other_state():
 
 def test_evidence_text_distinguishes_observation_from_assumptions():
     assert "lrand48" in EVIDENCE_OBSERVATION
+    assert "1997" in EVIDENCE_SHORT
     assert "1,842" in EVIDENCE_OBSERVATION
     assert "skipped" in EVIDENCE_LIMITS
     assert "hypothetical" in EVIDENCE_LIKELIHOOD_NOTE
@@ -36,5 +37,18 @@ def test_evidence_text_distinguishes_observation_from_assumptions():
 def test_all_streamlit_sliders_have_resettable_keys():
     app = (Path(__file__).resolve().parents[1] / "src/seed_bayes_lab/app.py").read_text()
     for key in DEFAULT_ASSUMPTIONS:
-        assert f'key="{key}"' in app
+        assert f'sensitivity_slider("{key}")' in app
+    assert 'key=key' in app
     assert "on_click=reset_assumptions" in app
+    from seed_bayes_lab.sensitivity import SLIDER_SPECS
+    assert set(DEFAULT_ASSUMPTIONS) == set(SLIDER_SPECS)
+
+
+def test_neutral_illustrative_prior_and_metric_notation():
+    assert DEFAULT_ASSUMPTIONS["prior_intent"] == 0.5
+    app = (Path(__file__).resolve().parents[1] / "src/seed_bayes_lab/app.py").read_text()
+    assert 'c1.metric("P(B)"' in app
+    assert 'c2.metric("P(B | E)"' in app
+    assert 'c3.metric("P(I | E)"' in app
+    assert 'Before observing E' in app
+    assert 'After observing E' in app

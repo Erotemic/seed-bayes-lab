@@ -19,9 +19,17 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
   heatmap, and a no-server budget slider.
 - `src/seed_bayes_lab/app.py`: Streamlit explorer with editable assumptions, explicit
   recovered-evidence description, source links, and reset-all button.
+- `src/seed_bayes_lab/sensitivity.py`: complete one-dial-at-a-time directional
+  scans, including flip detection, endpoint effects, and interior extrema.
+- `src/seed_bayes_lab/offline.js`: equivalent JavaScript calculations for the
+  full offline HTML application, with parity tests against Python.
 - `src/seed_bayes_lab/evidence.py`: shared observed-evidence definition.
+- `src/seed_bayes_lab/glossary.py`: shared finite-world events, search/publication
+  events, all thirteen input meanings, and display notation for both interfaces.
 - `src/seed_bayes_lab/ui_state.py`: centralized slider defaults and reset behavior.
-- `examples/interactive_demo.html`: generated, self-contained offline preview.
+- `examples/interactive_demo.html`: generated, self-contained offline explorer
+  with all thirteen sliders, icon-led endpoint effects, a detailed notation
+  glossary, live charts, reset, and direction-reversal hints.
 - `SeedBayes/Finite.lean`: finite Bayesian identities, odds form, factorization,
   likelihood-ratio criterion for a decreasing posterior, and 100%-intent case.
 - `SeedBayes/Selection.lean`: when observing the more constrained method must
@@ -39,24 +47,54 @@ uv run streamlit run src/seed_bayes_lab/app.py
 ```
 
 Open the local address printed by Streamlit. The **Reset all assumptions**
-button restores every control in both interactive tabs. An evidence panel above
-the tabs defines observation E and links to the historical sources.
+button restores every control in both interactive models. A compact evidence
+summary appears above the tabs; expand it for the complete observation,
+limitations, and historical source links.
 Use the **Evidence / Bayes** tab to
 change the three likelihoods and priors, and **Search & publication** to vary
 seed freedom, vulnerability rarity, search budget, chance of knowing an attack,
 and policy for publishing unsuccessful attempts.
 
-For the stand-alone demonstration, simply open
-`examples/interactive_demo.html` in a browser (no server or internet needed).
-To regenerate it:
+For the **complete shareable application**, open
+`examples/interactive_demo.html` in a browser (no server, internet, Python,
+Streamlit, or CDN needed). It now provides every assumption slider, live Bayes
+and search plots, visual endpoint badges, a full notation glossary tab,
+and a global reset.
+The HTML is several megabytes because Plotly is embedded. To regenerate it:
 
 ```bash
 uv run seed-bayes-demo examples/interactive_demo.html
 ```
 
-The standalone HTML demo has a **Reset interactive charts** button to
-restore its compute-budget slider and the original chart ranges. It does not
-expose all parameters; use the Streamlit application to edit all assumptions.
+The global reset restores all thirteen controls in either interface. Both
+interfaces describe the historical observation E, distinguish it from the
+stronger method-observation T, and report before/after probabilities using
+`P(B)` and `P(B | E)` (or `P(B | published)` and
+`P(B | published,T)` in the search tab).
+
+The **icon at each slider endpoint** predicts the posterior change if that
+single slider moves to its minimum or maximum while every other input remains
+fixed. For example, in the first tab it shows
+
+`Δmove = P(B | E; endpoint) - P(B | E; current)`
+
+in **percentage points**. Below the icon is the actual endpoint `P(B | E)`.
+An upward arrow means increased posterior, a downward arrow means decreased
+posterior, and a neutral arrow means no numerical change. Undefined
+conditioning is marked with a question mark. The search tab analogously
+shows changes to `P(B | published,T)`.
+
+The separate **CAN REVERSE** label refers instead to the evidence-update
+sign `Δupdate = posterior - prior`, evaluated across every selectable slider
+position (including interior positions). Its full range is displayed below
+the slider. This distinction is intentional: changing `P(I)` can increase
+`P(B | E)` yet leave `P(B | E) < P(B)` throughout. Equality is not a
+strict reversal. Values for which conditioning is impossible are undefined,
+not unchanged. The glossary tab specifies `E`, `T`, `B`, `I`, publication,
+and all dials precisely; `E` and `T` are **different observations**.
+
+The default `P(I)=0.50` is a **symmetric demonstration prior**, not a factual
+assessment or a claim that maximum entropy automatically represents ignorance.
 
 An alternative without uv:
 
@@ -82,7 +120,8 @@ its nonzero/positivity hypotheses. None requires a full measure-theory event
 space; `Prior` and `Likelihood` are three-element finite tables encoded as
 structures.
 
-**Validation status:** Python tests have been executed. The initial
+**Validation status:** Python tests have been executed, including Python–JavaScript
+parity checks for the offline calculations. The initial
 Lean build reported noncomputable real-division definitions and deprecated
 order-multiplication lemma usage. Those sources have been corrected using
 `noncomputable def` and `mul_lt_mul_iff_of_pos_left`. The environment used
