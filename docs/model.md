@@ -67,7 +67,14 @@ With `f=0` and `h=0` (success certain), no evidence of positive prior
 probability can change P(B)=1.
 
 Lean: `posterior_lt_prior_iff_likelihood_ratio`, `certain_intent`,
-`prior_factorization`, `posterior_factorization`.
+`prior_factorization`, `posterior_factorization`, and the new
+`bayes_delta_formula` / `bayes_break_even_likelihood_iff`. These prove that
+when E is possible:
+
+`P(B|E)-P(B) = b * ((h+f)*l_B - h*l_H - f*l_F) / Z`.
+
+This is the exact polynomial numerator used by the break-even tick logic;
+it is not an approximation based on rounded percentages.
 
 ## Search mechanism: deliberately additional assumptions
 
@@ -87,7 +94,11 @@ Under these assumptions:
 
 `success_probability = p_known * search_success`.
 
-The code uses `expm1` and `log1p` to avoid cancellation. It does not assume
+Lean `SeedBayes/Search.lean` proves the Bernoulli recurrence and monotonicity
+for a **natural number of independent trials**, as well as min(freedom,budget)
+monotonicity. `SeedBayes/Fixtures.lean` checks exact probability examples for
+integer bit counts. For fractional UI slider coordinates, the code uses
+`expm1` and `log1p` to avoid cancellation. It does not assume
 that every secret attack works this way. Correlated vulnerabilities, adaptive
 construction, special algebraic structure, ability to recognize weaknesses,
 and procedural legitimacy are not proved by this formula.
@@ -130,6 +141,17 @@ After learning the published method was T:
 
 `P(B | Published,T) = sT / P(Published|T)`.
 
+The exact delta between observing T and not observing it, given publication,
+is proved in `SeedBayes/Publication.lean`:
+
+`P(B|J,T)-P(B|J) = rho*(1-alpha)*(sT-sU)/(P(J|T)*P(J))`.
+
+When the denominators are positive, the equality cases are `rho=0`,
+`alpha=1`, or `sT=sU`. A conditional P(B|J,T) is defined only if the
+method T has positive prior probability. The Lean proof states the needed
+nonzero/positivity assumptions, and Python explicitly returns `None` for
+impossible observations.
+
 At `rho=1`, publication provides no evidence. At `rho=0`, and for positive
 success chance, every published curve is successful by construction. This is
 not an assertion about how real standards bodies choose curves; it shows why
@@ -154,7 +176,12 @@ Python tests exercise the three-world identities, Bayes odds, zero-probability
 cases, search monotonicity and publication selection. Lean files prove the
 finite algebra for symbolic real variables (with positivity assumptions).
 Neither numerical tests nor Lean can establish that the historical inputs are
-true. The Lean toolchain was unavailable at authoring time; run `lake build`.
+true. The additional symbolic identities and 24 exact regression configurations
+are in `SeedBayes/Calculations.lean`, `SeedBayes/Publication.lean`,
+`SeedBayes/Search.lean`, and `SeedBayes/Fixtures.lean`. Python and the offline
+JavaScript are checked against the same exact values; see
+[proof-map.md](proof-map.md). The Lean toolchain was unavailable at authoring
+time; run `lake build SeedBayes` before claiming those new proofs are verified.
 
 ## Offline/Streamlit interactions and one-dial sensitivity
 
@@ -234,5 +261,6 @@ refined by bisection; undetected tangencies between samples remain possible.
 
 Streamlit displays a companion ruler underneath its native slider (native
 custom ticks are not supported). Standalone HTML overlays ticks directly on
-its slider. These are visualization-only additions: the Lean probability
-identities and the modeled evidence are unchanged.
+its slider. The root finder itself is numerical; Lean proves the exact break-even
+numerators and algebraic equality conditions, but not slider interpolation,
+floating-point handling, or canvas placement.

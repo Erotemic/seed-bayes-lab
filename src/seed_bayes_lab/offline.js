@@ -38,13 +38,9 @@
     return -Math.expm1(attempts * Math.log1p(-q));
   }
 
-  function methodUpdate(s) {
-    const t = s.know_restricted * independentSearch(
-      s.rarity_bits, s.restricted_bits, s.compute_bits);
-    const u = s.know_unrestricted * independentSearch(
-      s.rarity_bits, s.unrestricted_bits, s.compute_bits);
-    const a = s.prior_restricted;
-    const rho = s.publish_failed;
+  // Direct four-parameter publication kernel, shared with methodUpdate and
+  // the cross-language Lean-certified rational conformance cases.
+  function publishedMethodUpdate(a, t, u, rho) {
     const publishedT = t + (1 - t) * rho;
     const publishedU = u + (1 - u) * rho;
     const published = a * publishedT + (1 - a) * publishedU;
@@ -53,6 +49,14 @@
     const delta = before === null || after === null ? null :
       rho * (1 - a) * (t - u) / (publishedT * published);
     return { before, after, delta, restrictedSuccess: t, unrestrictedSuccess: u };
+  }
+
+  function methodUpdate(s) {
+    const t = s.know_restricted * independentSearch(
+      s.rarity_bits, s.restricted_bits, s.compute_bits);
+    const u = s.know_unrestricted * independentSearch(
+      s.rarity_bits, s.unrestricted_bits, s.compute_bits);
+    return publishedMethodUpdate(s.prior_restricted, t, u, s.publish_failed);
   }
 
   function direction(delta) {
@@ -485,7 +489,7 @@
   }
 
   root.SeedBayesOffline = {
-    finiteBayes, methodUpdate, independentSearch, direction, formatter,
+    finiteBayes, methodUpdate, publishedMethodUpdate, independentSearch, direction, formatter,
     zeroNumerator, breakEvens, sweep, mount
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

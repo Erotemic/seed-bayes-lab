@@ -127,30 +127,53 @@ python -m pytest
 python -m streamlit run src/seed_bayes_lab/app.py
 ```
 
-## Lean formalization
+## Lean formalization and code conformance
 
-Install [elan](https://github.com/leanprover/elan), then from this repo:
+The Lean source now covers the complete finite Bayesian update, the exact
+break-even numerator, both signs of the update, the publication-conditioned
+method mixture, and independent-trial search probability with natural trial
+counts. This intentionally stops short of a formal cryptographic attack or a
+floating-point JavaScript runtime.
+
+Install [elan](https://github.com/leanprover/elan), with Lean v4.32.0 pinned
+by `lean-toolchain`. Mathlib is pinned by `lakefile.toml`.
 
 ```bash
 lake update
 lake exe cache get
-lake build
+uv sync --extra dev --extra app
+uv run python scripts/verify_formal.py
 ```
 
-The Lean toolchain and Mathlib dependency are pinned to **v4.32.0**. The proofs
-are independent of any probabilistic cryptanalysis model. Each theorem states
-its nonzero/positivity hypotheses. None requires a full measure-theory event
-space; `Prior` and `Likelihood` are three-element finite tables encoded as
-structures.
+`verify_formal.py` is strict: it checks the generated Lean fixture module,
+requires `lake build SeedBayes` to pass, and runs the full Python test suite
+(including Node.js comparisons against the actual offline HTML math kernels).
+Missing Lean or Node makes the strict check fail rather than silently skip.
+The ordinary `uv run pytest` command works without a Lean installation.
 
-**Validation status:** Python tests have been executed, including Python–JavaScript
-parity checks for the offline calculations. The initial
-Lean build reported noncomputable real-division definitions and deprecated
-order-multiplication lemma usage. Those sources have been corrected using
-`noncomputable def` and `mul_lt_mul_iff_of_pos_left`. The environment used
-for this update has no Lean toolchain or Mathlib cache, so the revised files
-have **not been compiled here**. Run `lake build` to verify these fixes.
-There are no `sorry`/axiom shortcuts in the supplied files.
+The core conformance bridge consists of:
+
+- `tests/formal_cases.json`: 24 exact rational model scenarios.
+- `scripts/generate_formal_fixtures.py`: generates `SeedBayes/Fixtures.lean`
+  with exact rational expected results and `norm_num` proofs.
+- `tests/test_formal_conformance.py`: independently exercises the production
+  Python and offline JavaScript calculations against those same answers.
+- `SeedBayes/Calculations.lean`, `Publication.lean`, `Search.lean`: symbolic
+  results valid for whole families of probabilities, not just examples.
+
+You can regenerate the proofs with
+`python scripts/generate_formal_fixtures.py`, then check with
+`lake build SeedBayes`. The fixture generator refuses to verify a stale
+Lean file.
+
+**Validation status:** All 51 Python tests, including Node.js numerical
+conformance, pass in the artifact-authoring environment. The Lean toolchain
+and Mathlib were unavailable there, so the new Lean proofs are **not yet
+compilation-verified**. Run the strict command above locally before claiming
+that formal verification is complete. There are no `sorry` or axioms added.
+
+See [docs/proof-map.md](docs/proof-map.md) for a theorem-to-function audit
+and the remaining boundaries of formalization.
 
 ## Observed evidence versus assumed likelihoods
 

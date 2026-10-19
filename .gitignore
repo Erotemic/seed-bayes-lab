@@ -10,3 +10,4 @@ lake-manifest.json
 *.ilean
 *.trace
 .DS_Store
+*.egg-info/
