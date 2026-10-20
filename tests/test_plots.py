@@ -16,7 +16,7 @@ def test_all_plotly_figures_are_serializable():
         direction_heatmap(prior, 0.8),
         evidence_sweep(prior, likelihoods),
         search_sweep(),
-        restriction_sweep(0.5,0.3,0.2,0.8,0.5),
+        restriction_sweep(0.5,0.2,0.8,0.2,0.3,0.15),
     ]
     for fig in figs:
         assert isinstance(fig, go.Figure)
@@ -55,8 +55,8 @@ def test_every_python_plot_has_explicit_axis_titles():
                      "P(E | B) - evidence likelihood", "P(B | E) - posterior"),
         "direction": (direction_heatmap(prior, 0.8), "P(E | F)", "P(E | B)"),
         "search": (search_sweep(), "Target rarity k (bits)", "Probability"),
-        "restriction": (restriction_sweep(0.5,0.3,0.2,0.8,0.5),
-           "P(T | I,E) - effective restriction after evidence",
+        "restriction": (restriction_sweep(0.5,0.2,0.8,0.2,0.3,0.15),
+           "P(E | I,T) - evidence likelihood if restricted",
            "P(B | E) - posterior backdoor probability"),
         "budget": (budget_slider_figure(), "Target rarity k (bits)",
                    "P(find at least one target)"),

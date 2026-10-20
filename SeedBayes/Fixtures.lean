@@ -264,184 +264,342 @@ example : independentSuccess (1 / (2 ^ 5) : ℝ) (2 ^ (min 4 4)) = (481502697867
 example : independentSuccess (1 / (2 ^ 6) : ℝ) (2 ^ (min 0 0)) = (1 / 64 : ℝ) := by
   norm_num [independentSuccess]
 
--- neutral restriction belief
-example : restrictionFactor (1 / 2 : ℝ) (1 / 2 : ℝ) = (3 / 4 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (1 / 2 : ℝ) (1 / 2 : ℝ) = (3 / 4 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (9 / 80 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (9 / 80 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- neutral evidence
+example : restrictionEvidenceMass (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (9 / 80 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (9 / 80 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
--- more confident restriction
-example : restrictionFactor (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 10 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (4 / 5 : ℝ) (1 / 2 : ℝ) = (3 / 5 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (27 / 200 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 100 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (-9 / 200 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (-9 / 200 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- evidence supports restriction
+example : restrictionEvidenceMass (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (8 / 25 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (27 / 200 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (9 / 80 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (-9 / 400 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (-9 / 1250 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
--- less confident restriction
-example : restrictionFactor (4 / 5 : ℝ) (1 / 2 : ℝ) = (3 / 5 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 10 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 100 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (27 / 200 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 200 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 200 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- evidence opposes restriction
+example : restrictionEvidenceMass (1 / 5 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) = (17 / 25 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 5 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) = (1 / 17 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (27 / 200 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (99 / 680 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (9 / 850 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (3 / 10 : ℝ) (3 / 20 : ℝ) = (9 / 1250 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+
+-- restriction improves attacks
+example : restrictionEvidenceMass (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (8 / 25 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (2 / 5 : ℝ) = (3 / 25 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (2 / 5 : ℝ) = (3 / 20 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (2 / 5 : ℝ) = (3 / 100 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 5 : ℝ) (2 / 5 : ℝ) = (6 / 625 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
 -- certain malicious intent
-example : restrictionFactor (1 / 4 : ℝ) (1 / 5 : ℝ) = (4 / 5 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (3 / 4 : ℝ) (1 / 5 : ℝ) = (2 / 5 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 : ℝ) (2 / 5 : ℝ) (1 / 4 : ℝ) (1 / 5 : ℝ) = (8 / 25 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 : ℝ) (2 / 5 : ℝ) (3 / 4 : ℝ) (1 / 5 : ℝ) = (4 / 25 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 : ℝ) (2 / 5 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 5 : ℝ) = (-4 / 25 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 : ℝ) (2 / 5 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 5 : ℝ) = (-4 / 25 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionEvidenceMass (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 4 : ℝ) = (3 / 8 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 4 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 : ℝ) (1 / 4 : ℝ) (2 / 5 : ℝ) (1 / 5 : ℝ) = (7 / 20 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 4 : ℝ) (2 / 5 : ℝ) (1 / 5 : ℝ) = (3 / 10 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 4 : ℝ) (2 / 5 : ℝ) (1 / 5 : ℝ) = (-1 / 20 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 4 : ℝ) (2 / 5 : ℝ) (1 / 5 : ℝ) = (-3 / 160 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
 -- no malicious intent
-example : restrictionFactor (1 / 5 : ℝ) (1 / 10 : ℝ) = (41 / 50 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (4 / 5 : ℝ) (1 / 10 : ℝ) = (7 / 25 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (0 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionEvidenceMass (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (8 / 25 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (0 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
--- restriction no effect
-example : restrictionFactor (0 : ℝ) (1 : ℝ) = (1 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (1 : ℝ) (1 : ℝ) = (1 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) = (1 / 4 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (1 : ℝ) = (1 / 4 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (1 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (1 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- prior restriction impossible
+example : restrictionEvidenceMass (0 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 5 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (0 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (0 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (0 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (0 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
--- restriction rules out success
-example : restrictionFactor (0 : ℝ) (0 : ℝ) = (1 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (3 / 4 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (0 : ℝ) = (3 / 8 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (3 / 4 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (3 / 4 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (0 : ℝ) = (-3 / 8 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (3 / 4 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (0 : ℝ) = (-3 / 8 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- prior restriction certain
+example : restrictionEvidenceMass (1 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (4 / 5 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (1 / 20 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (1 / 20 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
--- no baseline success
-example : restrictionFactor (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 10 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (4 / 5 : ℝ) (1 / 2 : ℝ) = (3 / 5 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 / 2 : ℝ) (0 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 / 2 : ℝ) (0 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 / 2 : ℝ) (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 / 2 : ℝ) (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- identical success rates
+example : restrictionEvidenceMass (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (4 / 5 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
--- zero prior backdoor
-example : restrictionFactor (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionFactor (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
-example : restrictionDeltaPolynomial (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
-  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
-    restrictionDelta, restrictionDeltaPolynomial]
+-- no unrestricted success
+example : restrictionEvidenceMass (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (4 / 5 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) = (1 / 8 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (0 : ℝ) (1 / 2 : ℝ) = (1 / 5 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (0 : ℝ) (1 / 2 : ℝ) = (3 / 40 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (0 : ℝ) (1 / 2 : ℝ) = (3 / 80 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+
+-- evidence excludes restriction
+example : restrictionEvidenceMass (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (7 / 40 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (3 / 40 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (3 / 160 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+
+-- evidence excludes nonrestriction
+example : restrictionEvidenceMass (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) = (1 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (7 / 40 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (1 / 10 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (-3 / 40 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) = (-3 / 160 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+
+-- zero attack success
+example : restrictionEvidenceMass (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (1 / 2 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionPosteriorBelief (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) = (4 / 5 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (0 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (0 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
+example : restrictionDeltaNumerator (1 / 2 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (0 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,
+    restrictionBefore, restrictionAfter, restrictionDelta,
+    restrictionDeltaNumerator]
 
 end SeedBayes

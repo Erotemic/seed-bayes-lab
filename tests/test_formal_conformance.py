@@ -111,23 +111,31 @@ def test_lean_proved_independent_search_cases_against_python():
 
 
 @theory.tests(
+    "SeedBayes.Restriction.Posterior",
+    note="Bayes-derived restricted-method posterior tested against exact rational examples",
+)
+@theory.tests(
     "SeedBayes.Restriction.Delta",
     note="Exact rational Lean fixtures compared with production restriction model",
 )
 def test_lean_proved_effective_restriction_cases_against_python():
     for c in _cases()['restriction']:
-        p, s, t0, t1, r = (float(Fraction(c[x])) for x in
-                             ('p', 's', 't0', 't1', 'r'))
-        result = restriction_update(p, s, t0, t1, r)
+        p, t, et, eu, su, st = (float(Fraction(c[x])) for x in
+                             ('p', 't', 'et', 'eu', 'su', 'st'))
+        result = restriction_update(p, t, et, eu, su, st)
         expected = c['expected']
         for actual, field in (
-            (result.factor_before, 'factor_before'),
-            (result.factor_after, 'factor_after'),
+            (result.evidence_mass, 'evidence'),
+            (result.belief_after, 'belief_after'),
             (result.before, 'before'),
             (result.after, 'after'),
             (result.delta, 'delta'),
         ):
             _close(actual, expected[field])
+        state = {'restriction_intent':p,'restriction_before':t,
+                 'restriction_evidence_t':et,'restriction_evidence_u':eu,
+                 'restriction_success_u':su,'restriction_success_t':st}
+        _close(_zero_numerator(state,'restriction'),expected['numerator'])
         if expected['multiplier'] is None:
             assert result.multiplier is None
         else:
@@ -172,9 +180,9 @@ def test_lean_proved_cases_against_offline_javascript():
       const search = all.search.map(c =>
         api.independentSearch(c.k, c.freedom, c.budget));
       const restriction = all.restriction.map(c => api.restrictionUpdate({
-        restriction_intent:num(c.p), restriction_baseline_success:num(c.s),
-        restriction_before:num(c.t0), restriction_after:num(c.t1),
-        restriction_ratio:num(c.r)
+        restriction_intent:num(c.p), restriction_before:num(c.t),
+        restriction_evidence_t:num(c.et), restriction_evidence_u:num(c.eu),
+        restriction_success_u:num(c.su), restriction_success_t:num(c.st)
       }));
       console.log(JSON.stringify({bayes, publication, search, restriction}));
     '''
@@ -200,7 +208,7 @@ def test_lean_proved_cases_against_offline_javascript():
 
     for c, result in zip(cases['restriction'], output['restriction'], strict=True):
         for field, key in (
-            ('factor_before', 'factorBefore'), ('factor_after', 'factorAfter'),
+            ('evidence', 'evidence'), ('belief_after', 'beliefAfter'),
             ('before', 'before'), ('after', 'after'), ('delta', 'delta'),
         ):
             _close(result[key], c['expected'][field])

@@ -277,46 +277,55 @@ with bayes:
     with restriction_view:
         st.subheader("Did E make effective restriction more plausible?")
         st.markdown(
-            "This alternative holds **P(I | E) = P(I)** fixed. **T** means the "
-            "designer was genuinely constrained in selecting vulnerable curves, "
-            "not merely that published seeds match a timestamp generator. "
-            "The evidence changes our belief from **P(T | I) = t0** to "
-            "**P(T | I,E) = t1**. A restriction reduces conditional attack "
-            "success by a factor **r** (0 = impossible, 1 = no effect)."
+            "**T** means the attacker was genuinely constrained—not merely that a seed "
+            "matches `lrand48`. We derive **P(T | I,E)** by Bayes' theorem, "
+            "using **P(T | I)** and the likelihoods **P(E | I,T)** and "
+            "**P(E | I,not T)**. Restricted and unrestricted attack success "
+            "are two explicit probabilities, rather than an assumed ratio."
         )
         st.info(
-            "These five numbers are hypothetical. This is a separate explanation "
-            "of the same E, not an additional multiplier to the likelihood model. "
-            "Publication selection and changes in intent are held out."
+            "All six inputs are hypothetical. This model assumes evidence does "
+            "not change malicious intent and has no additional effect on success "
+            "after conditioning on I and T. It is an **alternative** to the "
+            "likelihood model, not another multiplier."
         )
         left, right = st.columns([1, 2], gap="large")
         with left:
-            p = sensitivity_slider("restriction_intent")
-            s = sensitivity_slider("restriction_baseline_success")
+            st.markdown("**Historical inference**")
             t0 = sensitivity_slider("restriction_before")
-            t1 = sensitivity_slider("restriction_after")
-            r = sensitivity_slider("restriction_ratio")
+            e_t = sensitivity_slider("restriction_evidence_t")
+            e_u = sensitivity_slider("restriction_evidence_u")
+            st.markdown("**Attack feasibility**")
+            s_u = sensitivity_slider("restriction_success_u")
+            s_t = sensitivity_slider("restriction_success_t")
+            p = sensitivity_slider("restriction_intent")
         show_flip_summary(tuple(spec.key for spec in RESTRICTION_SLIDERS))
         with right:
-            result = restriction_update(p, s, t0, t1, r)
+            result = restriction_update(p, t0, e_t, e_u, s_u, s_t)
             a, b, c = st.columns(3)
             a.metric("P(B)", f"{result.before:.2%}")
-            a.caption("Before E in the restriction model")
-            b.metric("P(B | E)", f"{result.after:.2%}",
-                     delta=f"{result.delta:+.2%}", delta_color="inverse")
-            b.caption("After E in the restriction model")
-            c.metric("Posterior / prior", "undefined" if result.multiplier is None
-                     else f"{result.multiplier:.3f}×")
-            c.caption("Undefined when P(B) = 0")
-            warning = restriction_support_warning(p, t0, t1)
+            a.caption("Before observing E")
+            b.metric("P(B | E)", "undefined" if result.after is None else f"{result.after:.2%}",
+                     delta=None if result.delta is None else f"{result.delta:+.2%}",
+                     delta_color="inverse")
+            b.caption("After observing E")
+            c.metric("P(T | I,E)", "undefined" if result.belief_after is None
+                     else f"{result.belief_after:.2%}")
+            c.caption("Derived from Bayes, not a slider")
+            st.caption(f"**P(E | I)** = {result.evidence_mass:.3f}. We assume "
+                       "P(E | not I) = P(E | I), so P(I | E) = P(I).")
+            warning = restriction_support_warning(p, t0, e_t, e_u)
             if warning:
                 st.warning(warning)
-            st.plotly_chart(restriction_sweep(p, s, t0, t1, r),
+            if s_t > s_u:
+                st.warning("P(B | I,T) > P(B | I,not T): this scenario assumes "
+                           "the restricted method makes attack success more likely.")
+            st.plotly_chart(restriction_sweep(p, t0, e_t, e_u, s_u, s_t),
                             use_container_width=True)
             st.caption(
-                "Exact identity: Δ = −p · s · (t1−t0) · (1−r). "
-                "The direction can decrease only if E increases belief in restriction "
-                "and restriction actually makes the attack harder, holding intent fixed."
+                "Exact identity: Δ = p·t0·(1−t0)·(eT−eU)·(sT−sU) / "
+                "[t0·eT+(1−t0)·eU], provided the denominator is positive. "
+                "Thus eT > eU and sT < sU imply a decrease for nondegenerate priors."
             )
 
 with search:
@@ -381,7 +390,7 @@ with glossary:
     st.markdown("#### The five Bayesian input dials")
     _show_parameters(BAYES_PARAMETERS)
     st.markdown("### Effective restriction · alternative explanation of E")
-    st.markdown("Here **T** is a genuine constraint and **E** remains the observed reconstruction. The model assumes **P(I|E)=P(I)** and that E affects backdoor success only by changing **P(T|I)**. It is **not multiplied** into the likelihood model.")
+    st.markdown("Here **T** is a genuine constraint and **E** remains the actual seed observation. **P(T|I,E)** is derived by Bayes, not independently set. To hold **P(I|E)=P(I)**, we assume **P(E|not I)=P(E|I)**. Evidence has no further effect on success given I,T. This is **not multiplied** into the likelihood model.")
     _show_entries(RESTRICTION_EVENTS)
     _show_entries(RESTRICTION_QUANTITIES)
     _show_parameters(RESTRICTION_PARAMETERS)

@@ -289,36 +289,61 @@ floating-point handling, or canvas placement.
 
 ## Alternative effective-restriction explanation of E
 
-This is a **separate interpretation of the same historical evidence E**, not
-an extra factor to apply after the three-world likelihood model. Let `T` mean
-that the generation method truly restricted the adversary's ability to find
-or construct a weak curve, not merely that the output matches `lrand48`.
+This is a **separate interpretation** of the observed historical evidence E,
+not an additional Bayes multiplier. Let I be malicious intent, B a successfully
+planted backdoor, and T an actually binding limit on an attacker’s available
+parameter choices (more than merely fitting a timestamp generator).
 
-Assumptions:
+All six slider inputs are conditional probabilities in [0,1]:
 
-1. `p = P(I|E) = P(I)` (intent stays fixed).
-2. `s = P(B|I,not T,E) = P(B|I,not T)` (baseline success invariant given method).
-3. `P(B|I,T,E) = P(B|I,T) = r*s` with `0 <= r <= 1`.
-4. `t0=P(T|I)` and `t1=P(T|I,E)` represent before/after restriction beliefs.
-5. Publication selection is ignored. The backdoor event requires intent.
+| Input | Meaning |
+|---|---|
+| `p` | `P(I)` |
+| `t` | `P(T|I)` prior belief in binding restriction |
+| `eT` | `P(E|I,T)` evidence likelihood if constrained |
+| `eU` | `P(E|I,not T)` evidence likelihood if unconstrained |
+| `sT` | `P(B|I,T)` restricted attack success |
+| `sU` | `P(B|I,not T)` unrestricted attack success |
 
-Applying total probability conditional on intent:
+The additional assumptions, **not learned from the reconstruction**, are:
+
+1. **Fixed intent:** `P(E|not I) = P(E|I) = D`, where `D=t*eT+(1-t)*eU`.
+   Under possible evidence (`D>0`), Bayes then gives `P(I|E)=P(I)=p`.
+2. **Conditional success invariance:** `P(B|I,T,E)=sT` and
+   `P(B|I,not T,E)=sU`. Evidence affects successful planting only through
+   its effect on belief in T (after intent is held fixed).
+3. **No publication selection:** we do not condition on publication here.
+   This assumption differs from the separate search/publication tab.
+4. **No monotonicity silently imposed:** the application allows `sT>sU`,
+   though `sT<=sU` is the relevant premise for a binding restriction to
+   make attack success no more likely.
+
+Applying Bayes and total probability:
 
 ```text
-P(B)   = p*s*[1 - t0*(1-r)]
-P(B|E) = p*s*[1 - t1*(1-r)]
-Delta  = -p*s*(t1-t0)*(1-r)
+D = t*eT + (1-t)*eU
+P(T|I,E) = t*eT/D
+P(B) = p*((1-t)*sU + t*sT)
+P(B|E) = p*((1-P(T|I,E))*sU + P(T|I,E)*sT)
+Delta = p*t*(1-t)*(eT-eU)*(sT-sU)/D
 ```
 
-`SeedBayes/Restriction.lean` proves the difference and break-even identities,
-and non-increase given `p>=0`, `s>=0`, `t0<=t1`, and `r<=1`. The probabilities
-are hypothetical; Lean does not establish the historical assumptions.
+When `p>0`, `0<t<1`, `eT>eU`, and `sT<sU`, `Delta<0`. Under positive D,
+`Delta=0` exactly if at least one of `p=0`, `t=0`, `t=1`, `eT=eU`, or
+`sT=sU` holds. Setting `D=0` makes the posterior undefined, **not** zero.
 
-**Conditioning support:** if `P(I)>0` and `P(E|I)>0`, a prior `t0=0` implies
-`t1=0` and prior `t0=1` implies `t1=1`. The UI flags combinations that violate
-this. At `P(I)=0`, `P(T|I)` is technically undefined, so conditional success
-rates should be understood as counterfactual parameters. Their algebraic
-extension remains useful for slider boundary illustrations.
+`SeedBayes/Restriction.lean` proves these algebraic identities, the
+fixed-intent likelihood cancellation, the non-increase and strict-decrease
+results, and the break-even characterization. Its exact rational examples
+are mirrored by Python and JavaScript conformance tests. It does not assert
+any actual probability of malicious intent, secret attacks, or an effective
+historical restriction.
 
-The likelihood and restriction views have separate priors/sliders on purpose:
-combining their deltas would double-count E without a larger joint model.
+**Support:** At `p=0`, events conditional on I have zero probability, so the
+conditional parameters are counterfactual. At `t=0` or `t=1`, any Bayesian
+posterior P(T|I,E) under possible evidence remains at the boundary; this
+is enforced by the formula rather than by an independent user-controlled
+posterior slider.
+
+The likelihood and restriction views use independently chosen inputs and
+both explain the same E. Multiplying their updates would double-count E.

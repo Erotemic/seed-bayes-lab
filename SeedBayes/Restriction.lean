@@ -1,100 +1,160 @@
 import Mathlib
 
 /-!
-# Effective restriction as an alternative explanation of evidence E
+# Bayes-derived belief in an effective restriction
 
-This module proves only the probability arithmetic. It does not infer any
-historical probability, nor connect the observed E to an actually restrictive
-procedure. In particular the equations assume P(I|E)=P(I),
-P(B|I,T,E)=P(B|I,T), and P(B|I,not T,E)=P(B|I,not T).
-Publication selection is outside this model.
+Finite, purely algebraic probability model. No cryptographic assumptions are
+proved here. With `I` intent, `T` an effective restriction, `B` planted
+backdoor, and `E` observed provenance, parameters are
+`p=P(I)`, `t=P(T|I)`, `eT=P(E|I,T)`, `eU=P(E|I,not T)`,
+`sU=P(B|I,not T)`, `sT=P(B|I,T)`.
 
-Parameters: p=P(I), s=P(B|I,not T), t0=P(T|I), t1=P(T|I,E),
-r=P(B|I,T)/s when s>0. Values are probabilities with r in [0,1].
+The model explicitly assumes: (a) E does not alter attack success conditional
+on intent and T, and (b) the evidence likelihood under no intent equals
+`t*eT+(1-t)*eU`, which makes `P(I|E)=P(I)` for nonzero evidence mass.
+It is an ALTERNATIVE explanation of E, not an additional update to combine
+with the existing three-world likelihood model.
 -/
 
 namespace SeedBayes
 
-/-- Multiplicative success factor at a given conditional belief in restriction. -/
-def restrictionFactor (t r : ℝ) : ℝ := 1 - t * (1 - r)
+/-- P(E|I), and (by assumption) P(E|not I). -/
+def restrictionEvidenceMass (t eT eU : ℝ) : ℝ := t * eT + (1 - t) * eU
 
-/-- Marginal backdoor probability before learning E. -/
-def restrictionBefore (p s t0 r : ℝ) : ℝ :=
-  p * s * restrictionFactor t0 r
+/-- P(T|I,E) obtained by Bayes' theorem; requires positive evidence mass. -/
+noncomputable def restrictionPosteriorBelief (t eT eU : ℝ) : ℝ :=
+  t * eT / restrictionEvidenceMass t eT eU
 
-/-- Marginal backdoor probability after learning E. -/
-def restrictionAfter (p s t1 r : ℝ) : ℝ :=
-  p * s * restrictionFactor t1 r
+/-- P(B) in the effective-restriction interpretation. -/
+def restrictionBefore (p t sU sT : ℝ) : ℝ :=
+  p * ((1 - t) * sU + t * sT)
 
-/-- Signed evidence update; NOT combined with the three-world likelihood update. -/
-def restrictionDelta (p s t0 t1 r : ℝ) : ℝ :=
-  restrictionAfter p s t1 r - restrictionBefore p s t0 r
+/-- P(B|E), with P(I|E)=p and success rates unchanged given I,T. -/
+noncomputable def restrictionAfter (p t eT eU sU sT : ℝ) : ℝ :=
+  p * ((1 - restrictionPosteriorBelief t eT eU) * sU +
+    restrictionPosteriorBelief t eT eU * sT)
 
-/-- The polynomial implemented directly in Python and JavaScript. -/
-def restrictionDeltaPolynomial (p s t0 t1 r : ℝ) : ℝ :=
-  -(p * s) * (t1 - t0) * (1 - r)
+/-- Signed posterior-minus-prior update. -/
+noncomputable def restrictionDelta (p t eT eU sU sT : ℝ) : ℝ :=
+  restrictionAfter p t eT eU sU sT - restrictionBefore p t sU sT
 
-/-- Exact update: a change in the belief that an attacker was restricted. -/
-theorem restriction_delta_formula (p s t0 t1 r : ℝ) :
-    restrictionDelta p s t0 t1 r = restrictionDeltaPolynomial p s t0 t1 r := by
-  unfold restrictionDelta restrictionDeltaPolynomial restrictionAfter restrictionBefore restrictionFactor
+/-- Exact numerator used for direction and break-even sliders. -/
+def restrictionDeltaNumerator (p t eT eU sU sT : ℝ) : ℝ :=
+  p * t * (1 - t) * (eT - eU) * (sT - sU)
+
+/-- The posterior belief in T differs from the prior by this exact amount. -/
+theorem restriction_belief_shift (t eT eU : ℝ)
+    (hD : restrictionEvidenceMass t eT eU ≠ 0) :
+    restrictionPosteriorBelief t eT eU - t =
+      t * (1 - t) * (eT - eU) / restrictionEvidenceMass t eT eU := by
+  unfold restrictionPosteriorBelief
+  field_simp [hD]
+  simp only [restrictionEvidenceMass]
   ring
 
-/-- If the evidence increases belief in genuine restriction and that restriction
-    does not improve attack success, the update cannot be positive. -/
-theorem restriction_nonincrease (p s t0 t1 r : ℝ)
-    (hp : 0 ≤ p) (hs : 0 ≤ s) (ht : t0 ≤ t1) (hr : r ≤ 1) :
-    restrictionDelta p s t0 t1 r ≤ 0 := by
-  rw [restriction_delta_formula]
-  unfold restrictionDeltaPolynomial
-  have h : 0 ≤ p * s * (t1 - t0) * (1 - r) :=
-    mul_nonneg (mul_nonneg (mul_nonneg hp hs) (sub_nonneg.mpr ht))
-      (sub_nonneg.mpr hr)
-  nlinarith
+/-- The unconditional intent probability remains p if the likelihood
+    of E under not-I is set equal to the marginal likelihood under I. -/
+theorem restriction_intent_invariant (p t eT eU : ℝ)
+    (hD : restrictionEvidenceMass t eT eU ≠ 0) :
+    p * restrictionEvidenceMass t eT eU /
+      ((1 - p) * restrictionEvidenceMass t eT eU +
+       p * restrictionEvidenceMass t eT eU) = p := by
+  have hsum : (1 - p) * restrictionEvidenceMass t eT eU +
+      p * restrictionEvidenceMass t eT eU = restrictionEvidenceMass t eT eU := by ring
+  rw [hsum]
+  field_simp [hD]
 
-/-- Strict decrease when all four factors really contribute. -/
-theorem restriction_strict_decrease (p s t0 t1 r : ℝ)
-    (hp : 0 < p) (hs : 0 < s) (ht : t0 < t1) (hr : r < 1) :
-    restrictionDelta p s t0 t1 r < 0 := by
-  rw [restriction_delta_formula]
-  unfold restrictionDeltaPolynomial
-  have h : 0 < p * s * (t1 - t0) * (1 - r) :=
-    mul_pos (mul_pos (mul_pos hp hs) (sub_pos.mpr ht))
-      (sub_pos.mpr hr)
-  nlinarith
+/-- The update depends only on the belief change and the success-rate gap. -/
+theorem restriction_delta_shift (p t eT eU sU sT : ℝ) :
+    restrictionDelta p t eT eU sU sT =
+      p * (restrictionPosteriorBelief t eT eU - t) * (sT - sU) := by
+  unfold restrictionDelta restrictionAfter restrictionBefore
+  ring
 
-/-- Exact break-even characterization: no intent, no baseline chance, no change
-    in belief, or a restriction that makes no difference. -/
-theorem restriction_break_even_iff (p s t0 t1 r : ℝ) :
-    restrictionDelta p s t0 t1 r = 0 ↔
-      p = 0 ∨ s = 0 ∨ t1 = t0 ∨ r = 1 := by
-  have hRewrite : restrictionDelta p s t0 t1 r =
-      -(p * s * (t1 - t0) * (1 - r)) := by
-    rw [restriction_delta_formula]
-    unfold restrictionDeltaPolynomial
-    ring
-  rw [hRewrite]
-  simp only [neg_eq_zero]
-  constructor
-  · intro h
-    rcases (mul_eq_zero.mp h) with hleft | hright
-    · rcases (mul_eq_zero.mp hleft) with hleft | htime
-      · rcases (mul_eq_zero.mp hleft) with hp | hs
-        · exact Or.inl hp
-        · exact Or.inr (Or.inl hs)
-      · exact Or.inr (Or.inr (Or.inl (sub_eq_zero.mp htime)))
-    · have hr : 1 = r := sub_eq_zero.mp hright
-      exact Or.inr (Or.inr (Or.inr hr.symm))
-  · intro h
-    rcases h with hp | hs | htime | hr
-    · simp [hp]
-    · simp [hs]
-    · simp [htime]
-    · simp [hr]
+/-- Exact rational delta: all six inputs are probabilities, and no free
+    posterior belief or success ratio is supplied. -/
+theorem restriction_delta_formula (p t eT eU sU sT : ℝ)
+    (hD : restrictionEvidenceMass t eT eU ≠ 0) :
+    restrictionDelta p t eT eU sU sT =
+      restrictionDeltaNumerator p t eT eU sU sT /
+        restrictionEvidenceMass t eT eU := by
+  rw [restriction_delta_shift, restriction_belief_shift t eT eU hD]
+  unfold restrictionDeltaNumerator
+  ring
 
-/-- Equal prior and posterior restriction beliefs always give a neutral update. -/
-theorem restriction_unchanged (p s t r : ℝ) :
-    restrictionDelta p s t t r = 0 := by
-  simp [restrictionDelta, restrictionAfter, restrictionBefore]
+/-- Equal evidence likelihoods imply no change, when conditioning is defined. -/
+theorem restriction_neutral_evidence (p t e sU sT : ℝ)
+    (hD : restrictionEvidenceMass t e e ≠ 0) :
+    restrictionDelta p t e e sU sT = 0 := by
+  rw [restriction_delta_formula p t e e sU sT hD]
+  simp [restrictionDeltaNumerator]
+
+/-- The restriction cannot increase the chance of backdooring if evidence
+    favors T and T makes a successful attack no easier. -/
+theorem restriction_nonincrease (p t eT eU sU sT : ℝ)
+    (hp : 0 ≤ p) (ht0 : 0 ≤ t) (ht1 : t ≤ 1)
+    (he : eU ≤ eT) (hs : sT ≤ sU)
+    (hD : 0 < restrictionEvidenceMass t eT eU) :
+    restrictionDelta p t eT eU sU sT ≤ 0 := by
+  rw [restriction_delta_formula p t eT eU sU sT (ne_of_gt hD)]
+  unfold restrictionDeltaNumerator
+  have hpos : 0 ≤ p * t * (1 - t) * (eT - eU) := by
+    exact mul_nonneg (mul_nonneg (mul_nonneg hp ht0) (sub_nonneg.mpr ht1))
+      (sub_nonneg.mpr he)
+  have hneg : sT - sU ≤ 0 := sub_nonpos.mpr hs
+  exact div_nonpos_of_nonpos_of_nonneg
+    (mul_nonpos_of_nonneg_of_nonpos hpos hneg) (le_of_lt hD)
+
+/-- Strict decrease for nondegenerate intent, prior, evidence advantage and
+    attack disadvantage under restriction. -/
+theorem restriction_strict_decrease (p t eT eU sU sT : ℝ)
+    (hp : 0 < p) (ht0 : 0 < t) (ht1 : t < 1)
+    (he : eU < eT) (hs : sT < sU)
+    (hD : 0 < restrictionEvidenceMass t eT eU) :
+    restrictionDelta p t eT eU sU sT < 0 := by
+  rw [restriction_delta_formula p t eT eU sU sT (ne_of_gt hD)]
+  unfold restrictionDeltaNumerator
+  have hpos : 0 < p * t * (1 - t) * (eT - eU) := by
+    exact mul_pos (mul_pos (mul_pos hp ht0) (sub_pos.mpr ht1)) (sub_pos.mpr he)
+  have hneg : sT - sU < 0 := sub_neg.mpr hs
+  exact div_neg_of_neg_of_pos (mul_neg_of_pos_of_neg hpos hneg) hD
+
+/-- If E favors restriction but the restricted method instead makes attack
+    success more likely, the observed evidence strictly raises backdoor risk. -/
+theorem restriction_strict_increase (p t eT eU sU sT : ℝ)
+    (hp : 0 < p) (ht0 : 0 < t) (ht1 : t < 1)
+    (he : eU < eT) (hs : sU < sT)
+    (hD : 0 < restrictionEvidenceMass t eT eU) :
+    0 < restrictionDelta p t eT eU sU sT := by
+  rw [restriction_delta_formula p t eT eU sU sT (ne_of_gt hD)]
+  unfold restrictionDeltaNumerator
+  have hpos : 0 < p * t * (1 - t) * (eT - eU) := by
+    exact mul_pos (mul_pos (mul_pos hp ht0) (sub_pos.mpr ht1)) (sub_pos.mpr he)
+  exact div_pos (mul_pos hpos (sub_pos.mpr hs)) hD
+
+/-- A break-even requires a zero factor in the exact numerator. -/
+theorem restriction_break_even_iff (p t eT eU sU sT : ℝ)
+    (hD : restrictionEvidenceMass t eT eU ≠ 0) :
+    restrictionDelta p t eT eU sU sT = 0 ↔
+      p = 0 ∨ t = 0 ∨ t = 1 ∨ eT = eU ∨ sT = sU := by
+  rw [restriction_delta_formula p t eT eU sU sT hD]
+  have hn : (restrictionDeltaNumerator p t eT eU sU sT /
+      restrictionEvidenceMass t eT eU = 0) ↔
+      restrictionDeltaNumerator p t eT eU sU sT = 0 := by
+    constructor
+    · intro h
+      have hm := congrArg (fun x : ℝ => x * restrictionEvidenceMass t eT eU) h
+      simpa [hD] using hm
+    · intro h
+      simp [h]
+  rw [hn]
+  unfold restrictionDeltaNumerator
+  have hOne : ((0 : ℝ) = 1 - t) ↔ t = 1 := by
+    constructor
+    · intro h
+      linarith
+    · intro h
+      linarith
+  simp [mul_eq_zero, sub_eq_zero, eq_comm, or_assoc, hOne]
 
 end SeedBayes

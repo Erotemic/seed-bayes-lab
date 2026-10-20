@@ -177,76 +177,121 @@
   ],
   "restriction": [
     {
-      "name": "neutral restriction belief",
+      "name": "neutral evidence",
       "p": "1/2",
-      "s": "3/10",
-      "t0": "1/2",
-      "t1": "1/2",
-      "r": "1/2"
+      "t": "1/2",
+      "et": "1/2",
+      "eu": "1/2",
+      "su": "3/10",
+      "st": "3/20"
     },
     {
-      "name": "more confident restriction",
+      "name": "evidence supports restriction",
       "p": "1/2",
-      "s": "3/10",
-      "t0": "1/5",
-      "t1": "4/5",
-      "r": "1/2"
+      "t": "1/5",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "3/10",
+      "st": "3/20"
     },
     {
-      "name": "less confident restriction",
+      "name": "evidence opposes restriction",
       "p": "1/2",
-      "s": "3/10",
-      "t0": "4/5",
-      "t1": "1/5",
-      "r": "1/2"
+      "t": "1/5",
+      "et": "1/5",
+      "eu": "4/5",
+      "su": "3/10",
+      "st": "3/20"
+    },
+    {
+      "name": "restriction improves attacks",
+      "p": "1/2",
+      "t": "1/5",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "1/5",
+      "st": "2/5"
     },
     {
       "name": "certain malicious intent",
       "p": "1",
-      "s": "2/5",
-      "t0": "1/4",
-      "t1": "3/4",
-      "r": "1/5"
+      "t": "1/4",
+      "et": "3/4",
+      "eu": "1/4",
+      "su": "2/5",
+      "st": "1/5"
     },
     {
       "name": "no malicious intent",
       "p": "0",
-      "s": "1/2",
-      "t0": "1/5",
-      "t1": "4/5",
-      "r": "1/10"
+      "t": "1/5",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "1/2",
+      "st": "1/10"
     },
     {
-      "name": "restriction no effect",
+      "name": "prior restriction impossible",
       "p": "1/2",
-      "s": "1/2",
-      "t0": "0",
-      "t1": "1",
-      "r": "1"
+      "t": "0",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "1/2",
+      "st": "1/10"
     },
     {
-      "name": "restriction rules out success",
-      "p": "3/4",
-      "s": "1/2",
-      "t0": "0",
-      "t1": "1",
-      "r": "0"
-    },
-    {
-      "name": "no baseline success",
+      "name": "prior restriction certain",
       "p": "1/2",
-      "s": "0",
-      "t0": "1/5",
-      "t1": "4/5",
-      "r": "1/2"
+      "t": "1",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "1/2",
+      "st": "1/10"
     },
     {
-      "name": "zero prior backdoor",
+      "name": "identical success rates",
       "p": "1/2",
-      "s": "1/2",
-      "t0": "1",
-      "t1": "1",
-      "r": "0"
+      "t": "1/2",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "1/2",
+      "st": "1/2"
+    },
+    {
+      "name": "no unrestricted success",
+      "p": "1/2",
+      "t": "1/2",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "0",
+      "st": "1/2"
+    },
+    {
+      "name": "evidence excludes restriction",
+      "p": "1/2",
+      "t": "1/2",
+      "et": "0",
+      "eu": "1/2",
+      "su": "1/2",
+      "st": "1/5"
+    },
+    {
+      "name": "evidence excludes nonrestriction",
+      "p": "1/2",
+      "t": "1/2",
+      "et": "1/2",
+      "eu": "0",
+      "su": "1/2",
+      "st": "1/5"
+    },
+    {
+      "name": "zero attack success",
+      "p": "1/2",
+      "t": "1/2",
+      "et": "4/5",
+      "eu": "1/5",
+      "su": "0",
+      "st": "0"
     }
   ]
 }

@@ -19,19 +19,24 @@ inputs are **not** established by Lean: only the conditional algebra is.
 | `bayes_break_even_iff`, `bayes_break_even_likelihood_iff` | `sensitivity.break_even_regions` | Algebraic conditions for equal posterior and prior |
 | `scalar_delta_agrees`, `scalar_numerator_agrees` | `offline.js:finiteBayes`, `sensitivity._zero_numerator` | Scalar formulas are the same finite model |
 
-## Alternative effective-restriction explanation
+## Alternative Bayes-derived effective-restriction explanation
 
 | Lean declaration | Production code | Mathematical claim |
 |---|---|---|
-| `restrictionFactor`, `restrictionBefore`, `restrictionAfter` | `restriction.restriction_update`, `offline.js:restrictionUpdate` | Marginal backdoor probabilities for before/after restriction beliefs |
-| `restriction_delta_formula` | `restriction.RestrictionUpdate.delta`, `sensitivity._zero_numerator` | Exact polynomial `-p*s*(t1-t0)*(1-r)` |
-| `restriction_nonincrease`, `restriction_strict_decrease` | `restriction.restriction_update`, slider directions | Non-increasing update if belief in restriction increases and restriction cannot help |
-| `restriction_break_even_iff`, `restriction_unchanged` | `sensitivity.break_even_regions`, offline break-even ticks | Break-even at `p=0`, `s=0`, `t0=t1` or `r=1` |
+| `restrictionEvidenceMass` | `restriction_update().evidence_mass`, `offline.js:restrictionUpdate` | `D=t*eT+(1-t)*eU` |
+| `restrictionPosteriorBelief`, `restriction_belief_shift` | `RestrictionUpdate.belief_after` | Bayes-derived `P(T|I,E)=t*eT/D` and its change from the prior |
+| `restriction_intent_invariant` | Model assumption and UI explanatory note | If `P(E|not I)=D`, conditioning on E leaves `P(I)` unchanged |
+| `restrictionBefore`, `restrictionAfter`, `restriction_delta_shift` | `restriction.restriction_update` and offline kernel | Marginalization over T with separate success rates `sT,sU` |
+| `restriction_delta_formula`, `restrictionDeltaNumerator` | `RestrictionUpdate.delta`, `sensitivity._zero_numerator`, offline.js | Exact `p*t*(1-t)*(eT-eU)*(sT-sU)/D` |
+| `restriction_nonincrease`, `restriction_strict_decrease`, `restriction_strict_increase` | Restriction endpoint/direction indicators | When evidence favors T and success under T is no greater, Δ is nonpositive |
+| `restriction_neutral_evidence`, `restriction_break_even_iff` | Break-even ticks and neutral reset | Zero update and exact algebraic equality conditions when D is nonzero |
 
-These proofs are conditional arithmetic. In particular, they assume intent and
-conditional success rates are unchanged by E, the model has no publication
-selection, and `T` is an effective constraint rather than mere generator
-provenance. The likelihood and restriction models cannot be multiplied together.
+The Lean results do not prove that observed timestamp provenance implies a
+binding restriction, or that a binding restriction actually decreases
+backdoor success. The conditionals and their ordering are input hypotheses.
+**Impossible evidence (D=0) is undefined, not break-even.** No publication
+selection is represented. Do not multiply this update by the three-world
+likelihood update, since both interpret E.
 
 ## Search and publication
 
@@ -86,8 +91,8 @@ optional dependency.
 - 8 publication-conditioned method configurations, including publication-only
   success, equal success, and positive/negative updates.
 - 7 independent-search configurations with natural trial counts `2^b`.
-- 9 effective-restriction configurations, including neutrality, both update
-  directions, 100% intent, and all four break-even factors.
+- 13 effective-restriction configurations with derived Bayes beliefs, neutrality,
+  both update directions, 100% intent, boundary priors and break-even factors.
 
 `scripts/generate_formal_fixtures.py` evaluates those formulas using Python's
 exact `fractions.Fraction`, then produces `SeedBayes/Fixtures.lean`. This is not

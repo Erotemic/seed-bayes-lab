@@ -45,10 +45,11 @@ DEFAULT_ASSUMPTIONS: dict[str, float | int] = {
     "publish_failed": 1.0,
     # Separate alternative explanation of E (neutral by default).
     "restriction_intent": 0.50,
-    "restriction_baseline_success": 0.40,
     "restriction_before": 0.50,
-    "restriction_after": 0.50,
-    "restriction_ratio": 0.50,
+    "restriction_evidence_t": 0.50,
+    "restriction_evidence_u": 0.50,
+    "restriction_success_u": 0.40,
+    "restriction_success_t": 0.20,
 }
 
 

@@ -19,7 +19,7 @@ from typing import Mapping
 import magnet_theory as theory
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
-from seed_bayes_lab.restriction import restriction_update
+from seed_bayes_lab.restriction import restriction_update, restriction_delta_numerator
 from seed_bayes_lab.search import method_observation_update, planted_success, publish_probability
 
 TOLERANCE = 1e-13
@@ -63,10 +63,11 @@ SEARCH_SLIDERS = (
 
 RESTRICTION_SLIDERS = (
     SliderSpec("restriction_intent", "P(I): malicious intent", 0.0, 1.0, 0.01, "restriction"),
-    SliderSpec("restriction_baseline_success", "P(B | I, not T): baseline success", 0.0, 1.0, 0.01, "restriction"),
-    SliderSpec("restriction_before", "P(T | I): restriction belief before E", 0.0, 1.0, 0.01, "restriction"),
-    SliderSpec("restriction_after", "P(T | I,E): restriction belief after E", 0.0, 1.0, 0.01, "restriction"),
-    SliderSpec("restriction_ratio", "r: relative success when restricted", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_before", "P(T | I): prior restriction belief", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_evidence_t", "P(E | I,T): evidence if restricted", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_evidence_u", "P(E | I,not T): evidence if unrestricted", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_success_u", "P(B | I,not T): unrestricted success", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_success_t", "P(B | I,T): restricted success", 0.0, 1.0, 0.01, "restriction"),
 )
 
 SLIDER_SPECS = {s.key: s for s in (*BAYES_SLIDERS, *SEARCH_SLIDERS, *RESTRICTION_SLIDERS)}
@@ -131,17 +132,17 @@ def search_posterior(values: Mapping[str, float | int]) -> float | None:
 def restriction_result(values: Mapping[str, float | int]):
     """Evaluate the standalone effective-restriction explanation of E."""
     return restriction_update(
-        values["restriction_intent"], values["restriction_baseline_success"],
-        values["restriction_before"], values["restriction_after"],
-        values["restriction_ratio"],
+        values["restriction_intent"], values["restriction_before"],
+        values["restriction_evidence_t"], values["restriction_evidence_u"],
+        values["restriction_success_u"], values["restriction_success_t"],
     )
 
 
-def restriction_delta(values: Mapping[str, float | int]) -> float:
+def restriction_delta(values: Mapping[str, float | int]) -> float | None:
     return restriction_result(values).delta
 
 
-def restriction_posterior(values: Mapping[str, float | int]) -> float:
+def restriction_posterior(values: Mapping[str, float | int]) -> float | None:
     return restriction_result(values).after
 
 
@@ -182,6 +183,14 @@ class BreakEvenRegion:
     note="Returns None if evidence mass is zero in the Bayes branch",
 )
 @theory.approximates(
+    "SeedBayes.Restriction.BreakEven",
+    note="UI numerically locates roots of the Lean-proved six-input numerator",
+)
+@theory.checks(
+    "SeedBayes.Restriction.BreakEven::hD",
+    note="Impossible evidence is never counted as break-even",
+)
+@theory.approximates(
     "SeedBayes.Publication.BreakEven",
     note="UI root finding evaluates rho*(1-alpha)*(st-su) in floating point",
 )
@@ -201,10 +210,11 @@ def _zero_numerator(values: Mapping[str, float | int], group: str) -> float | No
     not automatically mathematical break-even points.
     """
     if group == "restriction":
-        result = restriction_result(values)
-        # The exact polynomial derived in SeedBayes.Restriction. All settings
-        # are defined, even at a zero prior (when the ratio is undefined).
-        return result.delta
+        return restriction_delta_numerator(
+            values["restriction_intent"], values["restriction_before"],
+            values["restriction_evidence_t"], values["restriction_evidence_u"],
+            values["restriction_success_u"], values["restriction_success_t"],
+        )
     if group == "bayes":
         intent = float(values["prior_intent"])
         success = float(values["success_given_intent"])

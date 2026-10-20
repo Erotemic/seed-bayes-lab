@@ -20,7 +20,7 @@ from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
 
 def test_every_slider_is_scanned_inclusive_with_defaults():
-    assert len(SLIDER_SPECS) == 18
+    assert len(SLIDER_SPECS) == 19
     assert set(SLIDER_SPECS) == set(DEFAULT_ASSUMPTIONS)
     for key, spec in SLIDER_SPECS.items():
         positions = spec.positions()
@@ -131,11 +131,18 @@ def test_deltas_match_original_probability_implementations():
             values["prior_restricted"],st,su,values["publish_failed"]
         ).delta
         assert search_delta(values) == pytest.approx(expected_method)
-        assert restriction_delta(values) == pytest.approx(
-            -(values["restriction_intent"] * values["restriction_baseline_success"])
-            * (values["restriction_after"] - values["restriction_before"])
-            * (1 - values["restriction_ratio"])
-        )
+        d = (values["restriction_before"] * values["restriction_evidence_t"]
+             + (1 - values["restriction_before"]) * values["restriction_evidence_u"])
+        if d == 0:
+            assert restriction_delta(values) is None
+        else:
+            assert restriction_delta(values) == pytest.approx(
+                values["restriction_intent"] * values["restriction_before"]
+                * (1 - values["restriction_before"])
+                * (values["restriction_evidence_t"] - values["restriction_evidence_u"])
+                * (values["restriction_success_t"] - values["restriction_success_u"])
+                / d
+            )
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node is optional")
@@ -178,9 +185,9 @@ def test_offline_javascript_agrees_with_python():
         expected += [method.before,method.after,method.delta]
         from seed_bayes_lab.restriction import restriction_update
         rr = restriction_update(
-            state["restriction_intent"], state["restriction_baseline_success"],
-            state["restriction_before"], state["restriction_after"],
-            state["restriction_ratio"],
+            state["restriction_intent"], state["restriction_before"],
+            state["restriction_evidence_t"], state["restriction_evidence_u"],
+            state["restriction_success_u"], state["restriction_success_t"],
         )
         expected += [rr.before,rr.after,rr.delta]
         for actual, want in zip(vals,expected):

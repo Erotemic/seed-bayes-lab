@@ -36,17 +36,20 @@
   // finiteBayes(). Values are uncalibrated; P(I|E)=P(I) is assumed constant.
   function restrictionUpdate(s) {
     const p = s.restriction_intent;
-    const baseline = s.restriction_baseline_success;
-    const t0 = s.restriction_before;
-    const t1 = s.restriction_after;
-    const r = s.restriction_ratio;
-    const factorBefore = 1 - t0 * (1 - r);
-    const factorAfter = 1 - t1 * (1 - r);
-    const before = p * baseline * factorBefore;
-    const after = p * baseline * factorAfter;
-    const delta = -(p * baseline) * (t1 - t0) * (1 - r);
-    return { before, after, delta,
-      factorBefore, factorAfter, multiplier: before > 0 ? after / before : null };
+    const t = s.restriction_before;
+    const eT = s.restriction_evidence_t;
+    const eU = s.restriction_evidence_u;
+    const sU = s.restriction_success_u;
+    const sT = s.restriction_success_t;
+    const before = p * ((1 - t) * sU + t * sT);
+    const evidence = t * eT + (1 - t) * eU;
+    if (!(evidence > 0)) return {before,after:null,delta:null,beliefAfter:null,evidence,
+      multiplier:null};
+    const beliefAfter = t * eT / evidence;
+    const after = p * ((1 - beliefAfter) * sU + beliefAfter * sT);
+    const delta = p * t * (1 - t) * (eT - eU) * (sT - sU) / evidence;
+    return {before,after,delta,beliefAfter,evidence,
+      multiplier:before > 0 ? after/before : null};
   }
 
   function independentSearch(k, available, budget) {
@@ -145,7 +148,13 @@
   // probability change is not automatically a break-even point.
   // Null means conditioning is impossible, so it must not produce a tick.
   function zeroNumerator(s, group) {
-    if (group === 'restriction') return restrictionUpdate(s).delta;
+    if (group === 'restriction') {
+      const t=s.restriction_before,eT=s.restriction_evidence_t,eU=s.restriction_evidence_u;
+      const d=t*eT+(1-t)*eU;
+      if (!(d>0)) return null;
+      return s.restriction_intent*t*(1-t)*(eT-eU)*
+        (s.restriction_success_t-s.restriction_success_u);
+    }
     if (group === 'bayes') {
       const honest = 1 - s.prior_intent;
       const failed = s.prior_intent * (1 - s.success_given_intent);
@@ -472,18 +481,18 @@
 
   function restrictionFigure(s) {
     const xs = Array.from({length:101},(_,i)=>i/100);
-    const ys = xs.map(t1=>restrictionUpdate({...s,restriction_after:t1}).after);
+    const ys = xs.map(eT=>restrictionUpdate({...s,restriction_evidence_t:eT}).after);
     const now = restrictionUpdate(s);
     const traces = [
       {x:xs,y:ys,name:'P(B | E)',type:'scatter',mode:'lines',
        line:{color:'#285aa3',width:3}},
       {x:[0,1],y:[now.before,now.before],name:'P(B) before E',
        type:'scatter',mode:'lines',line:{dash:'dash',color:'#8c93a0',width:2}},
-      {x:[s.restriction_after],y:[now.after],name:'Current assumptions',
+      {x:[s.restriction_evidence_t],y:[now.after],name:'Current assumptions',
        type:'scatter',mode:'markers',marker:{size:11,color:'#c05d33'}}
     ];
     const layout = {title:{text:'Effective-restriction belief sensitivity',font:{size:16}},
-      xaxis:{title:{text:'P(T | I,E) - effective restriction after evidence',standoff:10},
+      xaxis:{title:{text:'P(E | I,T) - evidence likelihood if restricted',standoff:10},
         range:[0,1],tickformat:'.0%',automargin:true},
       yaxis:{title:{text:'P(B | E) - posterior backdoor probability',standoff:8},
         range:[0,1],tickformat:'.0%',automargin:true},
@@ -506,18 +515,17 @@
       document.getElementById('bayes-intent-after').textContent = percent(result.intentAfter);
     }
     if (group === 'restriction') {
-      document.getElementById('restriction-multiplier').textContent =
-        result.multiplier === null ? 'undefined' : result.multiplier.toFixed(3) + '\u00d7';
-      const priorT = values.restriction_before;
-      const posteriorT = values.restriction_after;
-      const warning = values.restriction_intent === 0 ?
-        'P(T | I) conditions on zero-probability intent. The model is counterfactual here.' :
-        ((priorT === 0 && posteriorT !== 0) ||
-         (priorT === 1 && posteriorT !== 1)) ?
-        'This belief pair cannot arise from conditioning on positive-probability E: a prior of 0 or 1 cannot move. The algebra is counterfactual here.' : '';
+      document.getElementById('restriction-belief-after').textContent = percent(result.beliefAfter);
+      const warning = !(result.evidence > 0) ?
+        'The evidence is impossible under these inputs; no posterior is defined.' :
+        values.restriction_intent === 0 ?
+        'P(T | I) conditions on zero-probability intent: this is a counterfactual model.' :
+        values.restriction_success_t > values.restriction_success_u ?
+        'This setting assumes the restricted method makes success MORE likely (sT > sU).' : '';
       const note = document.getElementById('restriction-support-note');
-      note.textContent = warning;
-      note.hidden = !warning;
+      note.textContent = 'P(E | I) = ' + result.evidence.toFixed(3) +
+        '. Assuming P(E | not I) equals this, P(I | E) = P(I). ' + warning;
+      note.hidden = false;
     }
   }
 

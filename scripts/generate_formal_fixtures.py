@@ -57,16 +57,18 @@ def compute_cases():
         n = 2**min(freedom, budget)
         result['search'].append(dict(spec, expected={'success': str(1-(1-q)**n)}))
     for spec in payload['restriction']:
-        p, ss, t0, t1, r = (f(spec[x]) for x in ('p', 's', 't0', 't1', 'r'))
-        before_factor = 1-t0*(1-r)
-        after_factor = 1-t1*(1-r)
-        before = p*ss*before_factor
-        after = p*ss*after_factor
+        p, t, et, eu, su, st = (f(spec[x]) for x in ('p', 't', 'et', 'eu', 'su', 'st'))
+        evidence = t*et+(1-t)*eu
+        assert evidence>0, spec  # impossible evidence is tested separately
+        belief_after=t*et/evidence
+        before=p*((1-t)*su+t*st)
+        after=p*((1-belief_after)*su+belief_after*st)
+        numerator=p*t*(1-t)*(et-eu)*(st-su)
         result['restriction'].append(dict(spec, expected={
-            'factor_before': str(before_factor), 'factor_after': str(after_factor),
-            'before': str(before), 'after': str(after),
-            'delta': str(-p*ss*(t1-t0)*(1-r)),
-            'multiplier': str(after/before) if before else None,
+            'evidence':str(evidence),'belief_after':str(belief_after),
+            'before':str(before),'after':str(after),
+            'delta':str(numerator/evidence),'numerator':str(numerator),
+            'multiplier':str(after/before) if before else None,
         }))
     return result
 
@@ -134,20 +136,21 @@ def render():
         lines.append('  norm_num [independentSuccess]')
         lines.append('')
     for c in table['restriction']:
-        p, ss, t0, t1, r = (rat(c[x]) for x in ('p', 's', 't0', 't1', 'r'))
+        p, t, et, eu, su, st = (rat(c[x]) for x in ('p', 't', 'et', 'eu', 'su', 'st'))
         values = c['expected']
         lines.append(f'-- {c["name"]}')
         for name, args, expected in [
-            ('restrictionFactor', f'{t0} {r}', 'factor_before'),
-            ('restrictionFactor', f'{t1} {r}', 'factor_after'),
-            ('restrictionBefore', f'{p} {ss} {t0} {r}', 'before'),
-            ('restrictionAfter', f'{p} {ss} {t1} {r}', 'after'),
-            ('restrictionDelta', f'{p} {ss} {t0} {t1} {r}', 'delta'),
-            ('restrictionDeltaPolynomial', f'{p} {ss} {t0} {t1} {r}', 'delta'),
+            ('restrictionEvidenceMass', f'{t} {et} {eu}', 'evidence'),
+            ('restrictionPosteriorBelief', f'{t} {et} {eu}', 'belief_after'),
+            ('restrictionBefore', f'{p} {t} {su} {st}', 'before'),
+            ('restrictionAfter', f'{p} {t} {et} {eu} {su} {st}', 'after'),
+            ('restrictionDelta', f'{p} {t} {et} {eu} {su} {st}', 'delta'),
+            ('restrictionDeltaNumerator', f'{p} {t} {et} {eu} {su} {st}', 'numerator'),
         ]:
             lines.append(f'example : {name} {args} = {rat(values[expected])} := by')
-            lines.append('  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,')
-            lines.append('    restrictionDelta, restrictionDeltaPolynomial]')
+            lines.append('  norm_num [restrictionEvidenceMass, restrictionPosteriorBelief,')
+            lines.append('    restrictionBefore, restrictionAfter, restrictionDelta,')
+            lines.append('    restrictionDeltaNumerator]')
         lines.append('')
     lines.extend(['end SeedBayes', ''])
     return '\n'.join(lines)

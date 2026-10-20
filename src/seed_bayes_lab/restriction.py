@@ -1,14 +1,21 @@
-"""An alternative, assumption-driven explanation of an evidence update.
+"""Bayesian effective-restriction model with six probability-valued inputs.
 
-Let I be intent, T mean a genuinely restrictive selection process and B mean
-successful deliberate backdooring. The model holds P(I) constant under E and
-assumes that E changes backdoor success only by changing P(T | I) from t0 to t1.
-Conditional on I and not T the success chance is s; conditional on I and T it
-is r*s, independent of E given (I,T). Publication selection is not modeled.
+I: intent; B: successfully planted backdoor; T: genuinely binding restriction;
+E: the actual seed-provenance evidence. This is an ALTERNATIVE explanation
+of E to the three-world likelihood model, not an additional Bayes multiplier.
 
-This is NOT another multiplier to apply to the three-world Bayes likelihood
-model. Both are alternative explanations of the SAME historical observation.
-The parameters are uncalibrated hypothetical assumptions.
+Input probabilities:
+  p = P(I), t = P(T | I), eT = P(E | I,T), eU = P(E | I,not T),
+  sT = P(B | I,T), sU = P(B | I,not T).
+
+Assume E and B are conditionally independent given I,T, and given I,not T.
+Also assume P(E | not I) = t*eT + (1-t)*eU; this ensures P(I|E)=P(I).
+For positive evidence mass D = t*eT+(1-t)*eU:
+  t1 = P(T|I,E) = t*eT / D
+  before = p*((1-t)*sU+t*sT)
+  after = p*((1-t1)*sU+t1*sT)
+  delta = p*t*(1-t)*(eT-eU)*(sT-sU)/D.
+No posterior exists when D=0. None of these parameters is historically calibrated.
 """
 
 from __future__ import annotations
@@ -28,82 +35,85 @@ def _unit(name: str, value: float) -> float:
 
 @dataclass(frozen=True)
 class RestrictionUpdate:
-    """Marginal probability of B before and after E in the toy restriction model."""
+    """Probabilities and Bayesian update for the alternative restriction model."""
 
     before: float
-    after: float
-    delta: float
-    factor_before: float
-    factor_after: float
+    after: float | None
+    delta: float | None
+    belief_after: float | None
+    evidence_mass: float
 
     @property
     def multiplier(self) -> float | None:
-        """Posterior/prior; undefined if the prior is zero."""
-        return self.after / self.before if self.before > 0 else None
+        """Posterior/prior; undefined when evidence is impossible or prior zero."""
+        return self.after / self.before if self.after is not None and self.before > 0 else None
 
 
 @theory.approximates(
-    "SeedBayes.Restriction.Delta",
-    note="Floating-point realization of the exact restriction belief update",
+    "SeedBayes.Restriction.Posterior",
+    note="Bayes-derived P(T|I,E) and the marginal backdoor update",
 )
-@theory.checks("SeedBayes.Restriction.NonIncrease::hp")
-@theory.checks("SeedBayes.Restriction.NonIncrease::hs")
-@theory.checks("SeedBayes.Restriction.NonIncrease::hr")
+@theory.checks("SeedBayes.Restriction.Posterior::hD",
+               note="Undefined if the observed evidence has zero probability")
+@theory.approximates("SeedBayes.Restriction.Delta",
+                     note="Computes the proved rational delta directly")
 def restriction_update(
     intent: float,
-    baseline_success: float,
     belief_before: float,
-    belief_after: float,
-    relative_success: float,
+    evidence_restricted: float,
+    evidence_unrestricted: float,
+    success_unrestricted: float,
+    success_restricted: float,
 ) -> RestrictionUpdate:
-    """Compute P(B), P(B|E) under the stated effective-restriction assumptions.
+    """Compute P(B), P(B|E), and P(T|I,E) from six probabilities.
 
-    `belief_before` and `belief_after` are P(T|I) and P(T|I,E), NOT likelihoods
-    of the historical evidence. `relative_success` is P(B|I,T)/P(B|I,not T)
-    when baseline_success > 0, constrained to [0,1] here.
+    Unlike the old relative-success ratio, both attack success rates are
+    explicit probabilities and may be ordered either way. This exposes the
+    monotonicity assumption instead of silently enforcing it.
     """
     p = _unit("intent", intent)
-    s = _unit("baseline_success", baseline_success)
-    t0 = _unit("belief_before", belief_before)
-    t1 = _unit("belief_after", belief_after)
-    r = _unit("relative_success", relative_success)
-    f0 = 1.0 - t0 * (1.0 - r)
-    f1 = 1.0 - t1 * (1.0 - r)
-    before = p * s * f0
-    after = p * s * f1
-    # Evaluate the proved polynomial directly rather than subtracting two
-    # nearly equal probabilities when the evidence update is small.
-    delta = -(p * s) * (t1 - t0) * (1.0 - r)
-    return RestrictionUpdate(before, after, delta, f0, f1)
+    t = _unit("belief_before", belief_before)
+    e_t = _unit("evidence_restricted", evidence_restricted)
+    e_u = _unit("evidence_unrestricted", evidence_unrestricted)
+    s_u = _unit("success_unrestricted", success_unrestricted)
+    s_t = _unit("success_restricted", success_restricted)
+
+    before = p * ((1 - t) * s_u + t * s_t)
+    d = t * e_t + (1 - t) * e_u
+    if d == 0:
+        return RestrictionUpdate(before, None, None, None, d)
+    posterior_t = t * e_t / d
+    after = p * ((1 - posterior_t) * s_u + posterior_t * s_t)
+    # Algebraic numerator avoids cancellation in P(B|E) - P(B).
+    delta = p * t * (1 - t) * (e_t - e_u) * (s_t - s_u) / d
+    return RestrictionUpdate(before, after, delta, posterior_t, d)
 
 
 def restriction_support_warning(intent: float, belief_before: float,
-                                belief_after: float) -> str | None:
-    """Flag conditional-probability boundaries not achievable by ordinary Bayes.
-
-    The algebra is defined at these values, but with P(E|I)>0 a zero- or
-    one-probability prior event cannot become a different posterior value.
-    """
+                                evidence_restricted: float,
+                                evidence_unrestricted: float) -> str | None:
+    """Call out conditioning on zero-probability intent and impossible E."""
+    t = belief_before
+    d = t * evidence_restricted + (1 - t) * evidence_unrestricted
+    if d == 0:
+        return "The evidence has probability zero under this model; no posterior is defined."
     if intent == 0:
         return ("P(T|I) conditions on a zero-probability intent event. "
-                "The success parameters are only counterfactual in this setting.")
-    if ((belief_before == 0 and belief_after != 0) or
-        (belief_before == 1 and belief_after != 1)):
-        return ("This t0/t1 pair cannot arise by conditioning on a "
-                "positive-probability observation: certainty (0 or 1) "
-                "cannot move to another probability under Bayes' rule. "
-                "The displayed algebra is a counterfactual comparison only.")
+                "The success and conditional-evidence inputs are counterfactual here.")
     return None
 
 
 def restriction_delta_numerator(
-    intent: float,
-    baseline_success: float,
-    belief_before: float,
-    belief_after: float,
-    relative_success: float,
-) -> float:
-    """Polynomial update (denominator 1); zero exactly at a break-even."""
-    return restriction_update(
-        intent, baseline_success, belief_before, belief_after, relative_success
-    ).delta
+    intent: float, belief_before: float, evidence_restricted: float,
+    evidence_unrestricted: float, success_unrestricted: float,
+    success_restricted: float,
+) -> float | None:
+    """Provably sign-equivalent polynomial numerator; None when P(E)=0."""
+    p, t, e_t, e_u, s_u, s_t = (float(x) for x in (
+        intent, belief_before, evidence_restricted, evidence_unrestricted,
+        success_unrestricted, success_restricted,
+    ))
+    d = t * e_t + (1 - t) * e_u
+    if not d > 0:
+        return None
+    return p * t * (1 - t) * (e_t - e_u) * (s_t - s_u)

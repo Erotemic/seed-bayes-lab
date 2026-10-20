@@ -112,29 +112,58 @@ entries:
       - id: hJ
         type: mixturePublicationMass alpha st su rho != 0
 
+  - id: SeedBayes.Restriction.Posterior
+    kind: theorem
+    declaration: SeedBayes.restriction_belief_shift
+    source_path: SeedBayes/Restriction.lean
+    statement: Bayes-derived posterior belief in T and its exact difference from prior t; requires nonzero D.
+    premises:
+      - id: hD
+        type: restrictionEvidenceMass t eT eU > 0
+        statement: Runtime implementation returns undefined if evidence is impossible.
+
+  - id: SeedBayes.Restriction.IntentInvariant
+    kind: theorem
+    declaration: SeedBayes.restriction_intent_invariant
+    source_path: SeedBayes/Restriction.lean
+    statement: If P(E|not I) equals P(E|I), conditioning on E leaves P(I) unchanged.
+    premises:
+      - id: hD
+        type: restrictionEvidenceMass t eT eU != 0
+
   - id: SeedBayes.Restriction.Delta
     kind: theorem
     declaration: SeedBayes.restriction_delta_formula
     source_path: SeedBayes/Restriction.lean
-    statement: Exact change in P(B) when E changes only P(T|I), holding intent and conditional attack success fixed.
+    statement: Exact Bayes-derived posterior minus prior with separate success probabilities.
+    premises:
+      - id: hD
+        type: restrictionEvidenceMass t eT eU != 0
 
   - id: SeedBayes.Restriction.NonIncrease
     kind: theorem
     declaration: SeedBayes.restriction_nonincrease
     source_path: SeedBayes/Restriction.lean
-    statement: When effective restriction becomes more likely and cannot improve attack success, the posterior does not increase.
+    statement: If evidence favors T and T does not improve attack success, the update cannot increase.
     premises:
       - id: hp
         type: 0 <= p
+      - id: ht0
+        type: 0 <= t
+      - id: ht1
+        type: t <= 1
+      - id: he
+        type: eU <= eT
       - id: hs
-        type: 0 <= s
-      - id: ht
-        type: t0 <= t1
-      - id: hr
-        type: r <= 1
+        type: sT <= sU
+      - id: hD
+        type: 0 < restrictionEvidenceMass t eT eU
 
   - id: SeedBayes.Restriction.BreakEven
     kind: theorem
     declaration: SeedBayes.restriction_break_even_iff
     source_path: SeedBayes/Restriction.lean
-    statement: Delta is zero iff intent is zero, baseline success is zero, restriction belief does not change, or restriction has no effect.
+    statement: Delta is zero iff p=0, t=0, t=1, eT=eU, or sT=sU (assuming possible evidence).
+    premises:
+      - id: hD
+        type: restrictionEvidenceMass t eT eU != 0

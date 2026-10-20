@@ -65,11 +65,11 @@ def _glossary_html() -> str:
         + _glossary_table('Five input dials', BAYES_PARAMETERS, parameters=True)
         + '<h2 class="glossary-group-title">2. Effective restriction · alternative model of E</h2>'
         '<p class="intro">T means an effective restriction, NOT merely a timestamp-like seed. '
-        'P(I|E)=P(I) and conditional success under T and not T are assumed invariant. '
-        'This is an alternative to the likelihood model, not an additional multiplier.</p>'
+        'P(T|I,E) is computed by Bayes from evidence likelihoods. P(I|E)=P(I) '
+        'requires P(E|not I)=P(E|I); success conditional on I,T is invariant. This is an alternative to the likelihood model, not an additional multiplier.</p>'
         + _glossary_table('Events', RESTRICTION_EVENTS)
         + _glossary_table('Conditional probabilities and exact update', RESTRICTION_QUANTITIES)
-        + _glossary_table('Five effective-restriction dials', RESTRICTION_PARAMETERS, parameters=True)
+        + _glossary_table('Six effective-restriction dials', RESTRICTION_PARAMETERS, parameters=True)
         + '<h2 class="glossary-group-title">3. Search and publication model</h2>'
         '<p class="intro">Malicious intent is certain in this toy model. The '
         'design process chooses T or U before attempting to plant a backdoor; '
@@ -101,7 +101,7 @@ def _glossary_html() -> str:
 
 
 def render_html(destination: str | Path) -> Path:
-    """Export a shareable offline HTML with 18 live dials and a glossary tab.
+    """Export a shareable offline HTML with 19 live dials and a glossary tab.
 
     Bayes and search formulas in offline.js mirror the tested Python model;
     a parity test executes them using Node. Plotly is bundled inline.
@@ -228,7 +228,7 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <p><strong>Meaning of evidence likelihoods:</strong> %%EVIDENCE_NOTE%%</p>
 <p><strong>Sources:</strong> %%EVIDENCE_SOURCES%%</p></details></section>
 <div class="actions"><button type="button" id="reset-all" class="primary">Reset all assumptions</button>
-<span class="helper">Resets all 18 sliders, summary values, and charts.</span></div></header>
+<span class="helper">Resets all 19 sliders, summary values, and charts.</span></div></header>
 <div class="tabbar" role="tablist" aria-label="Probability models">
 <button type="button" id="tab-bayes" role="tab" aria-controls="panel-bayes" aria-selected="true">Evidence / Bayes</button>
 <button type="button" id="tab-search" role="tab" aria-controls="panel-search" aria-selected="false">Search &amp; publication</button>
@@ -263,20 +263,20 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <div class="chart-panel"><div id="bayes-heatmap" class="chart"></div></div>
 </div></div></div>
 <div id="bayes-view-restriction" role="tabpanel" aria-labelledby="bayes-subtab-restriction" hidden>
-<p class="intro">Here T means the designer was <strong>genuinely constrained</strong> in searching for a planted weakness, not merely that the seed is reconstructible. Assume intent stays fixed, P(I|E)=P(I), and E affects success only by changing belief in T from t0=P(T|I) to t1=P(T|I,E). If constrained, relative success is r from 0 (impossible) to 1 (no effect). <strong>This model is an alternative to the likelihood model; do not combine their updates.</strong></p>
+<p class="intro">T means a <strong>genuine constraint</strong> on selecting a vulnerable curve, not merely an `lrand48` match. Bayes derives P(T|I,E) from P(T|I), P(E|I,T), and P(E|I,not T). Both restricted and unrestricted attack-success chances are probabilities. We assume evidence leaves intent unchanged and does not change success conditional on I,T. <strong>This is an alternative model of E, not another update to multiply in.</strong></p>
 <div class="workspace">
 <div class="controls"><h2>Effective-restriction assumptions</h2>
-<p class="detail">Starts neutral: t0=t1=0.50. No historical probability is estimated by these dials.</p>
+<p class="detail">Starts neutral: P(E|I,T)=P(E|I,not T)=0.50, so the derived posterior restriction belief equals its prior. These values are illustrative.</p>
 <div id="restriction-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics">
 <div class="metric"><span class="metric-label">P(B) · before E</span><span class="metric-value" id="restriction-before">—</span></div>
 <div class="metric"><span class="metric-label">P(B | E) · after E</span><span class="metric-value" id="restriction-after">—</span></div>
 <div class="metric"><span class="metric-label">Δ (percentage points)</span><span class="metric-value" id="restriction-delta">—</span></div>
-<div class="metric"><span class="metric-label">Posterior / prior</span><span class="metric-value" id="restriction-multiplier">—</span></div>
+<div class="metric"><span class="metric-label">P(T | I,E) · derived</span><span class="metric-value" id="restriction-belief-after">—</span></div>
 </div><p class="flip-summary" id="restriction-flip-summary"></p></div>
 <div class="chart-panel"><div id="restriction-line" class="chart"></div></div>
 <div id="restriction-support-note" class="caveat" role="status" hidden></div>
-<div class="caveat">Identity: Δ = −p × s × (t1−t0) × (1−r). The restriction model holds malicious intent and conditional success rates fixed under E. Publication selection is not represented. The likelihood view's update is not added here.</div>
+<div class="caveat">Identity (for P(E|I)&gt;0): Δ = p × t × (1−t) × (eT−eU) × (sT−sU) / [t×eT+(1−t)×eU]. Here t=P(T|I), eT/eU are the evidence likelihoods, and sT/sU are the success probabilities. Assume P(E|not I)=P(E|I) to hold malicious intent constant. Publication selection is not modeled; do not combine this with the other likelihood view.</div>
 </div></div></div></section>
 <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden>
 <p class="intro">%%METHOD_OBSERVATION%% In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX. Purple ticks mark Δ = 0, and purple bars mark equality intervals, holding the other dials fixed. This is not evidence E.</p>

@@ -193,25 +193,28 @@ def budget_slider_figure(
 
 
 def restriction_sweep(
-    intent: float, baseline_success: float, belief_before: float,
-    belief_after: float, relative_success: float, samples: int = 201,
+    intent: float, belief_before: float, evidence_restricted: float,
+    evidence_unrestricted: float, success_unrestricted: float,
+    success_restricted: float, samples: int = 201,
 ) -> go.Figure:
-    """How the posterior changes with P(T|I,E), under the alternate model."""
+    """P(B|E) as P(E|I,T) varies; the other five inputs remain fixed."""
     xs = np.linspace(0, 1, samples)
-    res = restriction_update(intent, baseline_success, belief_before,
-                             belief_after, relative_success)
-    ys = [restriction_update(intent, baseline_success, belief_before,
-                             float(x), relative_success).after for x in xs]
+    res = restriction_update(intent, belief_before, evidence_restricted,
+                             evidence_unrestricted, success_unrestricted,
+                             success_restricted)
+    ys = [restriction_update(intent, belief_before, float(x),
+                             evidence_unrestricted, success_unrestricted,
+                             success_restricted).after for x in xs]
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=xs, y=ys, name="P(B | E)", mode="lines",
-                             line=dict(width=3)))
+                             line=dict(width=3), connectgaps=False))
     fig.add_hline(y=res.before, line_dash="dash", annotation_text="Prior P(B)")
-    fig.add_trace(go.Scatter(x=[belief_after], y=[res.after],
+    fig.add_trace(go.Scatter(x=[evidence_restricted], y=[res.after],
                              name="Current assumptions", mode="markers",
                              marker=dict(size=12)))
     fig.update_layout(
-        template="plotly_white", title="Effective-restriction belief sensitivity",
-        xaxis_title="P(T | I,E) - effective restriction after evidence",
+        template="plotly_white", title="Bayesian effective-restriction sensitivity",
+        xaxis_title="P(E | I,T) - evidence likelihood if restricted",
         yaxis_title="P(B | E) - posterior backdoor probability",
         xaxis=dict(range=[0, 1], tickformat=".0%", automargin=True),
         yaxis=dict(range=[0, 1], tickformat=".0%", automargin=True),

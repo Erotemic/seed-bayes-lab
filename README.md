@@ -32,11 +32,11 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
   full offline HTML application, with parity tests against Python.
 - `src/seed_bayes_lab/evidence.py`: shared observed-evidence definition.
 - `src/seed_bayes_lab/glossary.py`: shared finite-world events, search/publication
-  events, all eighteen input meanings, and display notation for both interfaces.
+  events, all nineteen input meanings, and display notation for both interfaces.
 - `src/seed_bayes_lab/ui_state.py`: centralized **neutral evidence** defaults, illustrative
   evidence-likelihood presets, and reset behavior.
 - `examples/interactive_demo.html`: generated, self-contained offline explorer
-  with all eighteen sliders, icon-led endpoint effects, purple break-even
+  with all nineteen sliders, icon-led endpoint effects, purple break-even
   ticks/segments, a detailed notation glossary, live charts, reset, and
   direction-reversal hints.
 - `SeedBayes/Finite.lean`: finite Bayesian identities, odds form, factorization,
@@ -151,35 +151,46 @@ python -m streamlit run src/seed_bayes_lab/app.py
 
 ## Alternative effective-restriction explanation of E
 
-Inside **Evidence / Bayes**, the new **Effective restriction** subview asks
-whether the discovery increases belief that the designers really had fewer
-opportunities to select a vulnerable curve. The model assumes:
+The **Effective restriction** view within **Evidence / Bayes** uses six
+probability-valued controls, not a free posterior or a success multiplier.
+The model distinguishes historical plausibility from attack feasibility:
 
-- `p = P(I) = P(I|E)`: evidence does **not** update malicious intent;
-- `s = P(B|I,not T)`: baseline success with no effective restriction;
-- `r`: conditional success multiplier given restriction, between 0 and 1;
-- `t0 = P(T|I)` and `t1 = P(T|I,E)`: beliefs before and after E.
+- `p = P(I)` is the probability of malicious intent.
+- `t = P(T|I)` is the prior belief in a genuinely binding constraint.
+- `eT = P(E|I,T)` and `eU = P(E|I,not T)` are the evidence likelihoods.
+- `sT = P(B|I,T)` and `sU = P(B|I,not T)` are **two conditional success probabilities**.
 
-The exact signed difference is:
+For `D = t*eT+(1-t)*eU > 0`, Bayes gives the **derived**, non-editable belief:
 
 ```text
-P(B|E) - P(B) = -p * s * (t1 - t0) * (1-r)
+P(T|I,E) = t*eT / D
+P(B)     = p*((1-t)*sU + t*sT)
+P(B|E)   = p*((1-P(T|I,E))*sU + P(T|I,E)*sT)
+Delta    = p*t*(1-t)*(eT-eU)*(sT-sU) / D
 ```
 
-A positive change in restriction belief (`t1 > t0`) implies a non-increasing
-backdoor probability **within this model**, if restricted success is no greater
-than unrestricted success. The default `t0=t1=0.5` is neutral. By design, the illustrative starting
-values `p=0.5`, `s=0.4`, and `r=0.5` yield the same 15% prior P(B) as
-the separate likelihood view; this is not a fitted historical constraint. The posterior/
-prior multiplier is undefined for a zero prior. At `t0=0` or `t0=1`, moving
-the posterior off that boundary is incompatible with conditioning on a
-positive-probability event; the UI warns when such inputs are selected.
+For `p>0`, `0<t<1`, evidence favoring restriction (`eT>eU`) and a
+restriction that makes planting a backdoor harder (`sT<sU`) imply a **strict
+decrease**. If either ordering is reversed, the direction can reverse as well.
+The app permits `sT>sU` deliberately: the inequality is an assumption to
+examine, not a fact supplied by Lean or the 2026 discovery.
 
-This subview does not establish that the historical seed method genuinely
-constrained malicious selection, that evidence E changes belief in restriction,
-or that intent is unaffected. Its inputs are explicit assumptions, not
-inferences from the reconstruction. In particular, do **not** multiply its
-update by the original likelihood tab's update: both interpret the same E.
+The model also assumes that the observation does not change malicious intent.
+More precisely, it sets `P(E|not I)=P(E|I)=D`, and assumes E does not change
+backdoor success after conditioning on `(I,T)` or `(I,not T)`. This is the
+**fixed-intent modeling premise**, not a consequence of the seed reconstruction.
+When `D=0`, the posterior is undefined; when `p=0`, conditionals on intent
+are counterfactual. The UI makes both limitations visible. Equal evidence
+likelihoods (`eT=eU=0.5`) make the starting update neutral. Defaults are
+chosen so both first-tab models initially have `P(B)=0.15`, but these are
+illustrative, not historical estimates.
+
+The Lean module proves the Bayesian belief shift, fixed-intent algebra, the
+posterior-minus-prior formula, both strict directions, non-increase, neutrality, and
+exact break-even conditions. Exact rational fixtures check the same formulas
+in Python and the offline JavaScript. None of this verifies the historical
+likelihood or attack-success premises. **Do not combine this view's update
+with the three-world likelihood view:** both interpret the same E.
 
 ## Lean formalization and code conformance
 
@@ -207,7 +218,7 @@ The ordinary `uv run pytest` command works without a Lean installation.
 
 The core conformance bridge consists of:
 
-- `tests/formal_cases.json`: 33 exact rational model scenarios.
+- `tests/formal_cases.json`: 37 exact rational model scenarios.
 - `scripts/generate_formal_fixtures.py`: generates `SeedBayes/Fixtures.lean`
   with exact rational expected results and `norm_num` proofs.
 - `tests/test_formal_conformance.py`: independently exercises the production

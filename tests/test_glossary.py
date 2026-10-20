@@ -16,8 +16,8 @@ from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS
 def test_every_slider_is_described_once():
     assert all_parameter_keys() == set(SLIDER_SPECS) == set(DEFAULT_ASSUMPTIONS)
     parameter_entries = [*BAYES_PARAMETERS, *SEARCH_PARAMETERS, *RESTRICTION_PARAMETERS]
-    assert len(parameter_entries) == len(SLIDER_SPECS) == 18
-    assert len({e.key for e in parameter_entries}) == 18
+    assert len(parameter_entries) == len(SLIDER_SPECS) == 19
+    assert len({e.key for e in parameter_entries}) == 19
     assert all(e.symbol and e.definition for e in parameter_entries)
 
 
