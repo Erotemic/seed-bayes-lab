@@ -115,3 +115,37 @@ def test_offline_javascript_axes_are_explicit_and_match_python():
         assert layout["xaxis"]["title"]["text"] == x_title, key
         assert layout["yaxis"]["title"]["text"] == y_title, key
     assert layouts["heatmap"]["colorbar"]["title"]["text"] == "Δ (pp)"
+
+
+def test_impossible_evidence_heatmap_has_explicit_undefined_state():
+    import warnings
+    p = Prior.from_intent_success(0.0, 0.3)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        figure = direction_heatmap(p, 0.0, samples=5)
+    assert not caught
+    assert len(figure.data) == 0
+    assert "Conditioning undefined" in figure.layout.annotations[0].text
+    assert figure.layout.xaxis.title.text == "P(E | F)"
+    assert figure.layout.yaxis.title.text == "P(E | B)"
+
+
+def test_js_impossible_evidence_heatmap_has_explanation():
+    import json
+    import shutil
+    import subprocess
+    if shutil.which("node") is None:
+        pytest.skip("Node optional")
+    js = Path(__file__).resolve().parents[1] / "src/seed_bayes_lab/offline.js"
+    cmd = """
+      require(process.argv[1]);
+      const s = {prior_intent:0,success_given_intent:0.3,
+        likelihood_honest:0,likelihood_failed:0.5,likelihood_succeeded:0.5};
+      const [data,layout] = globalThis.SeedBayesOffline.heatmapFigure(s);
+      console.log(JSON.stringify({count:data.length,message:layout.annotations?.[0]?.text}));
+    """
+    result = subprocess.run(["node", "-e", cmd, str(js)], text=True,
+                            capture_output=True, check=True)
+    payload = json.loads(result.stdout)
+    assert payload["count"] == 0
+    assert "Conditioning undefined" in payload["message"]

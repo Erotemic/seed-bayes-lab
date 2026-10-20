@@ -186,6 +186,11 @@ def _zero_numerator(values: Mapping[str, float | int], group: str) -> float | No
         evidence = honest * lh + failed * lf + backdoor * lb
         if evidence <= 0:
             return None
+        # Exact finite-model identity: equal nonzero likelihoods make E
+        # independent of the world, whatever the prior masses. Avoid
+        # spurious roots caused by cancellation in floating-point arithmetic.
+        if lh == lf == lb:
+            return 0.0
         # delta = backdoor * ((honest+failed)*lb - honest*lh - failed*lf)/evidence
         return backdoor * ((honest + failed) * lb - honest * lh - failed * lf)
 

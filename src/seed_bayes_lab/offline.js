@@ -135,6 +135,9 @@
       const lb = s.likelihood_succeeded;
       const z = honest * h + failed * f + b * lb;
       if (!(z > 0)) return null;
+      // Equal likelihoods are neutral for every prior; prevent FP jitter
+      // from generating dozens of fictitious zero crossings on prior dials.
+      if (h === f && f === lb) return 0;
       return b * ((honest + failed) * lb - honest * h - failed * f);
     }
     const t = s.know_restricted * independentSearch(
@@ -354,10 +357,20 @@
         }
       }
       const current = direction(group === 'bayes' ? finiteBayes(values).delta : methodUpdate(values).delta);
-      document.getElementById(group + '-flip-summary').textContent =
-        'Current: ' + current + '. ' + reversible + ' of ' + specs.length +
-        ' dials can reverse the direction individually' +
-        (reversibleNames.length ? ': ' + reversibleNames.join('; ') + '.' : '.');
+      const summary = document.getElementById(group + '-flip-summary');
+      if (current === 'unchanged') {
+        const movable = specs.filter(spec => {
+          const signs = sweep(values, spec).directions;
+          return signs.has('increase') || signs.has('decrease');
+        });
+        summary.textContent = 'Current evidence update: zero. ' + movable.length +
+          ' of ' + specs.length + ' dials can move it away from zero while other inputs stay fixed' +
+          (movable.length ? ': ' + movable.map(spec=>spec.label).join('; ') + '.' : '.');
+      } else {
+        summary.textContent = 'Current: ' + current + '. ' + reversible + ' of ' + specs.length +
+          ' dials can reverse the direction individually' +
+          (reversibleNames.length ? ': ' + reversibleNames.join('; ') + '.' : '.');
+      }
     }
   }
 
@@ -395,15 +408,20 @@
     }).delta));
     const magnitudes = z.flat().filter(x=>x!==null).map(x=>Math.abs(x));
     const lim = Math.max(...magnitudes,1e-10);
-    const traces = [{x:v,y:v,z:z.map(row=>row.map(x=>x===null?null:x*100)),
+    const traces = magnitudes.length ? [{x:v,y:v,z:z.map(row=>row.map(x=>x===null?null:x*100)),
       type:'heatmap',colorscale:'RdBu',reversescale:true,
       zmin:-lim*100,zmax:lim*100,
       colorbar:{title:{text:'\u0394 (pp)',side:'top'},len:0.75},
-      hovertemplate:'P(E | failed): %{x:.2f}<br>P(E | success): %{y:.2f}<br>\u0394: %{z:+.3f} pp<extra></extra>'}];
+      hovertemplate:'P(E | failed): %{x:.2f}<br>P(E | success): %{y:.2f}<br>\u0394: %{z:+.3f} pp<extra></extra>'}] : [];
     const layout = {title:{text:'Sign of the update',font:{size:16}},
-      xaxis:{title:{text:'P(E | F)',standoff:10},tickformat:'.0%',automargin:true},
-      yaxis:{title:{text:'P(E | B)',standoff:8},tickformat:'.0%',automargin:true},
+      xaxis:{title:{text:'P(E | F)',standoff:10},tickformat:'.0%',range:[0,1],automargin:true},
+      yaxis:{title:{text:'P(E | B)',standoff:8},tickformat:'.0%',range:[0,1],automargin:true},
       margin:{l:76,r:24,t:45,b:76},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
+    if (!magnitudes.length) {
+      layout.annotations = [{xref:'paper',yref:'paper',x:0.5,y:0.5,showarrow:false,
+        text:'Conditioning undefined for every plotted point: P(E) = 0',
+        font:{size:13,color:'#57657b'}}];
+    }
     return [traces,layout];
   }
 
@@ -464,13 +482,40 @@
       }
     }
 
+    function renderPresetState() {
+      const active = Object.keys(config.presets).find(name =>
+        Object.entries(config.presets[name]).every(([key,value]) => state[key] === value));
+      for (const button of document.querySelectorAll('[data-evidence-preset]')) {
+        button.setAttribute('aria-pressed', String(button.dataset.evidencePreset === active));
+      }
+      document.getElementById('preset-status').textContent =
+        active === 'neutral' ? 'Neutral evidence (no change to P(B))' :
+        active === 'benign' ? 'Illustrative case: favors benign construction' :
+        active === 'backdoor' ? 'Illustrative case: favors a planted backdoor' :
+        'Custom evidence likelihoods';
+    }
+
+    function syncInputs() {
+      for (const spec of config.specs) {
+        document.getElementById('slider-' + spec.key).value = String(state[spec.key]);
+      }
+    }
+
     function renderAll() {
+      renderPresetState();
       renderSweepIndicators(config, state);
       for (const group of GROUPS) renderSummary(state,group);
       if (!frame) { frame = true; root.requestAnimationFrame(drawPlots); }
     }
 
     renderControls(config, state, renderAll);
+    for (const button of document.querySelectorAll('[data-evidence-preset]')) {
+      button.addEventListener('click', () => {
+        Object.assign(state, config.presets[button.dataset.evidencePreset]);
+        syncInputs();
+        renderAll();
+      });
+    }
     for (const name of TABS) {
       const tab = document.getElementById('tab-' + name);
       tab.addEventListener('click',()=>{
@@ -484,9 +529,7 @@
     }
     document.getElementById('reset-all').addEventListener('click',()=>{
       Object.assign(state,copy(config.defaults));
-      for (const spec of config.specs) {
-        document.getElementById('slider-' + spec.key).value = String(state[spec.key]);
-      }
+      syncInputs();
       renderAll();
     });
     renderAll();

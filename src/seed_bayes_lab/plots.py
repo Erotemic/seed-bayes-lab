@@ -69,9 +69,17 @@ def direction_heatmap(prior: Prior, honest_likelihood: float, samples: int = 41)
                 z[i, j] = 100 * result.delta_backdoor
             except ValueError:
                 pass
-    lim = max(float(np.nanmax(np.abs(z))), 1e-10)
-    fig = go.Figure(
-        go.Heatmap(
+    valid = np.isfinite(z)
+    if not valid.any():
+        fig = go.Figure()
+        fig.add_annotation(
+            x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False,
+            text="Conditioning undefined for every plotted point: P(E) = 0",
+            font=dict(size=13),
+        )
+    else:
+        lim = max(float(np.max(np.abs(z[valid]))), 1e-10)
+        fig = go.Figure(go.Heatmap(
             x=values, y=values, z=z, zmin=-lim, zmax=lim,
             colorscale="RdBu", reversescale=True,
             colorbar=dict(title=dict(text="Δ (pp)", side="top"), tickformat="+.0f"),
@@ -80,14 +88,13 @@ def direction_heatmap(prior: Prior, honest_likelihood: float, samples: int = 41)
                 "<br>P(E | successful backdoor): %{y:.2f}"
                 "<br>Update: %{z:+.2f} pp<extra></extra>"
             ),
-        )
-    )
+        ))
     fig.update_layout(
         template="plotly_white", title="Direction of the Bayesian update",
         xaxis_title="P(E | F)",
         yaxis_title="P(E | B)",
-        xaxis=dict(tickformat=".0%", automargin=True),
-        yaxis=dict(tickformat=".0%", automargin=True),
+        xaxis=dict(tickformat=".0%", range=[0, 1], automargin=True),
+        yaxis=dict(tickformat=".0%", range=[0, 1], automargin=True),
         margin=dict(l=76, r=24, t=55, b=78),
     )
     return fig

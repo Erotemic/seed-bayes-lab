@@ -29,7 +29,8 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
 - `src/seed_bayes_lab/evidence.py`: shared observed-evidence definition.
 - `src/seed_bayes_lab/glossary.py`: shared finite-world events, search/publication
   events, all thirteen input meanings, and display notation for both interfaces.
-- `src/seed_bayes_lab/ui_state.py`: centralized slider defaults and reset behavior.
+- `src/seed_bayes_lab/ui_state.py`: centralized **neutral evidence** defaults, illustrative
+  evidence-likelihood presets, and reset behavior.
 - `examples/interactive_demo.html`: generated, self-contained offline explorer
   with all thirteen sliders, icon-led endpoint effects, purple break-even
   ticks/segments, a detailed notation glossary, live charts, reset, and
@@ -50,8 +51,16 @@ uv run pytest
 uv run streamlit run src/seed_bayes_lab/app.py
 ```
 
-Open the local address printed by Streamlit. The **Reset all assumptions**
-button restores every control in both interactive models. A compact evidence
+Open the local address printed by Streamlit. Both apps initially set
+`P(E | H) = P(E | F) = P(E | B) = 0.50`, so the recovered evidence causes
+**no prior-to-posterior change** by assumption. This is a symmetric
+*likelihood example*, not a claim that the actual discovery is neutral.
+Choose **Favors benign** (`0.80 / 0.60 / 0.20`) or **Favors backdoor**
+(`0.20 / 0.60 / 0.80`) to explore alternative assumptions, or edit the
+likelihood sliders individually. Presets change only the three evidence
+likelihoods; they do not reset intent, success, or search settings. The
+**Reset all assumptions** button restores all controls, including the neutral
+baseline. A compact evidence
 summary appears above the tabs; expand it for the complete observation,
 limitations, and historical source links.
 Use the **Evidence / Bayes** tab to
@@ -70,7 +79,7 @@ The HTML is several megabytes because Plotly is embedded. To regenerate it:
 uv run seed-bayes-demo examples/interactive_demo.html
 ```
 
-The global reset restores all thirteen controls in either interface. Both
+The global reset restores all thirteen controls to the neutral baseline in either interface. Both
 interfaces describe the historical observation E, distinguish it from the
 stronger method-observation T, and report before/after probabilities using
 `P(B)` and `P(B | E)` (or `P(B | published)` and
@@ -120,6 +129,8 @@ E is not the same as search-model observation T.
 
 The default `P(I)=0.50` is a **symmetric demonstration prior**, not a factual
 assessment or a claim that maximum entropy automatically represents ignorance.
+The neutral evidence likelihoods are likewise a *deliberate baseline*, not an
+empirical likelihood ratio.
 
 An alternative without uv:
 
@@ -168,12 +179,12 @@ You can regenerate the proofs with
 `lake build SeedBayes`. The fixture generator refuses to verify a stale
 Lean file.
 
-**Validation status:** All 51 Python tests, including Node.js numerical
-conformance, pass in the artifact-authoring environment. The Lean toolchain
-and Mathlib were unavailable there, so the new Lean proofs are **not yet
-compilation-verified**. Run the strict command above locally before claiming
-that formal verification is complete. There are no `sorry` or axioms added.
-
+**Verification:** Run `uv run pytest` to check Python, the offline JavaScript
+kernels (when Node.js is installed), and cross-language fixtures. The strict
+`uv run python scripts/verify_formal.py` additionally requires Lean and
+Mathlib, builds `SeedBayes`, and checks fixture synchronization. Test counts
+and previously observed build statuses are deliberately not baked into this
+README; validate your current checkout rather than trusting a stale count.
 See [docs/proof-map.md](docs/proof-map.md) for a theorem-to-function audit
 and the remaining boundaries of formalization.
 

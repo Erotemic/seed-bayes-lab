@@ -7,7 +7,8 @@ from seed_bayes_lab.evidence import (
     METHOD_OBSERVATION, SOURCES,
 )
 from seed_bayes_lab.ui_state import (
-    DEFAULT_ASSUMPTIONS, initialize_assumptions, reset_assumptions,
+    DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS, active_evidence_preset,
+    apply_evidence_preset, initialize_assumptions, reset_assumptions,
 )
 
 
@@ -52,3 +53,29 @@ def test_neutral_illustrative_prior_and_metric_notation():
     assert 'c3.metric("P(I | E)"' in app
     assert 'Before observing E' in app
     assert 'After observing E' in app
+
+
+def test_evidence_defaults_neutral_but_not_empirically_calibrated():
+    from seed_bayes_lab.model import Likelihoods, Prior, update
+    assert active_evidence_preset(DEFAULT_ASSUMPTIONS) == "neutral"
+    for intent, success in ((0.5, 0.3), (0.1, 0.9), (1.0, 0.4)):
+        p = Prior.from_intent_success(intent, success)
+        likelihoods = Likelihoods(*EVIDENCE_PRESETS["neutral"].values())
+        res = update(p, likelihoods)
+        assert abs(res.posterior_backdoor - res.prior_backdoor) < 1e-14
+
+
+def test_preset_changes_only_likelihoods_and_custom_is_detected():
+    state = dict(DEFAULT_ASSUMPTIONS)
+    state["prior_intent"] = 0.73
+    state["compute_bits"] = 42
+    apply_evidence_preset(state, "benign")
+    assert active_evidence_preset(state) == "benign"
+    assert state["prior_intent"] == 0.73
+    assert state["compute_bits"] == 42
+    apply_evidence_preset(state, "backdoor")
+    assert active_evidence_preset(state) == "backdoor"
+    state["likelihood_succeeded"] = 0.79
+    assert active_evidence_preset(state) is None
+    reset_assumptions(state)
+    assert active_evidence_preset(state) == "neutral"

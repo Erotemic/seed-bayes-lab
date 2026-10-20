@@ -24,6 +24,28 @@ the UI text and primary-source links. **Numerical likelihoods are assumptions**
 about how likely this composite observation is under each world, not empirical
 estimates obtained from seed data.
 
+## Starting assumptions and illustrative presets
+
+The default three evidence likelihoods are all `0.50`:
+`P(E | H) = P(E | F) = P(E | B)`. Under this **neutral evidence** baseline,
+conditioning on E leaves all three world probabilities unchanged, provided E
+has positive probability. This is a useful reference state for testing the
+sign of an update, **not** an inference that the recovered historical evidence
+is in fact neutral. Similarly, the default `P(I) = 0.50` is an illustrative
+symmetric prior, not a historical estimate.
+
+The interface offers two further *hypothetical* likelihood scenarios:
+
+- **Favors benign:** `(0.80, 0.60, 0.20)` for `(H, F, B)`; this was the
+  original demo's default before the neutral-baseline change.
+- **Favors backdoor:** `(0.20, 0.60, 0.80)` for `(H, F, B)`.
+
+Selecting a preset changes only these three inputs. Custom edits are allowed,
+and Reset restores the neutral baseline. Nothing in the historical reconstruction
+calibrates the three numbers, and presets are not statements of historical
+plausibility. The search/publication tab has its own observation and retains
+its independent default settings.
+
 This observed `E` has evidence probability
 
 `Z = h*l_H + f*l_F + b*l_B`.

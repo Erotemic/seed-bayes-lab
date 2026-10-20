@@ -16,7 +16,7 @@ from seed_bayes_lab.sensitivity import (
     SLIDER_SPECS, analyze_slider, bayes_delta, search_delta, direction,
     format_delta_pp,
 )
-from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS
+from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
 
 def test_every_slider_is_scanned_inclusive_with_defaults():
@@ -32,11 +32,22 @@ def test_every_slider_is_scanned_inclusive_with_defaults():
         assert result.current_direction in {"decrease", "unchanged", "increase"}
 
 
-def test_default_bayes_only_one_dial_can_reverse():
+def test_default_neutral_evidence_does_not_assume_a_direction():
+    assert bayes_delta(DEFAULT_ASSUMPTIONS) == pytest.approx(0.0, abs=1e-14)
+    scans = {key: analyze_slider(DEFAULT_ASSUMPTIONS, key) for key, spec in
+             SLIDER_SPECS.items() if spec.group == "bayes"}
+    assert all(not scan.can_reverse for scan in scans.values())
+    assert all(scan.current_direction == "unchanged" for scan in scans.values())
+    for key in ("likelihood_honest", "likelihood_failed", "likelihood_succeeded"):
+        assert {"decrease", "increase"} <= scans[key].directions
+
+
+def test_benign_preset_preserves_original_demonstration():
+    state = {**DEFAULT_ASSUMPTIONS, **EVIDENCE_PRESETS["benign"]}
     flips = [key for key in SLIDER_SPECS if SLIDER_SPECS[key].group == "bayes"
-             and analyze_slider(DEFAULT_ASSUMPTIONS, key).can_reverse]
+             and analyze_slider(state, key).can_reverse]
     assert flips == ["likelihood_succeeded"]
-    intent = analyze_slider(DEFAULT_ASSUMPTIONS, "prior_intent")
+    intent = analyze_slider(state, "prior_intent")
     assert intent.can_reach_equality
     assert not intent.can_reverse
     assert direction(intent.left_delta) == "unchanged"
@@ -78,7 +89,7 @@ def test_zero_probability_conditioning_is_not_equality():
 
 
 def test_100_percent_intent_has_nontrivial_update_but_honest_dial_no_effect():
-    values = dict(DEFAULT_ASSUMPTIONS)
+    values = {**DEFAULT_ASSUMPTIONS, **EVIDENCE_PRESETS["benign"]}
     values["prior_intent"] = 1.0
     assert direction(bayes_delta(values)) == "decrease"
     honest_sweep = analyze_slider(values, "likelihood_honest")

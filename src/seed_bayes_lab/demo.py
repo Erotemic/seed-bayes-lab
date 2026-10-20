@@ -19,7 +19,7 @@ from seed_bayes_lab.glossary import (
     BAYES_EVENTS, BAYES_QUANTITIES, SEARCH_EVENTS, SEARCH_QUANTITIES,
     BAYES_PARAMETERS, SEARCH_PARAMETERS,
 )
-from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS
+from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
 
 def _safe_json(value: object) -> str:
@@ -102,6 +102,7 @@ def render_html(destination: str | Path) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     config = {
         "defaults": DEFAULT_ASSUMPTIONS,
+        "presets": EVIDENCE_PRESETS,
         "specs": [
             {"key": spec.key, "label": spec.label, "min": spec.minimum,
              "max": spec.maximum, "step": spec.step, "group": spec.group}
@@ -143,6 +144,12 @@ button.primary:hover{background:#184575}.helper{color:#65758a;font-size:.85rem}
 .workspace{display:grid;grid-template-columns:minmax(325px,430px) minmax(0,1fr);gap:20px;align-items:start}
 .controls{padding:18px;background:white;border:1px solid #dce3ed;border-radius:12px}
 .controls>.detail{font-size:.86rem;color:#5e6c82;margin:2px 0 14px}
+.preset-box{border:1px solid #dce3ed;border-radius:9px;padding:11px;background:#f7f9fc;margin-bottom:14px}
+.preset-box p{font-size:.8rem;margin:3px 0 9px;color:#56677c}
+.preset-row{display:flex;gap:5px;flex-wrap:wrap}
+.preset-row button{flex:1 1 95px;padding:7px 6px;border:1px solid #c4cfde;border-radius:7px;color:#3b536e;background:#fff;font-size:.78rem;font-weight:650}
+.preset-row button[aria-pressed=true]{color:white;background:#235b97;border-color:#235b97}
+.preset-status{margin-top:7px;font-size:.75rem;color:#5e6c82}
 .dial{padding:12px 0 14px;border-top:1px solid #ebeff3}
 .dial-header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .dial-header label{font-size:.90rem;font-weight:600;color:#2c3c51}
@@ -219,7 +226,16 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <section id="panel-bayes" role="tabpanel" aria-labelledby="tab-bayes">
 <p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points. Purple ticks mark isolated break-even settings (Δ = 0); a purple bar marks an interval of equality. Ticks depend on the other dials, not the dial itself.</p>
 <div class="workspace">
-<div class="controls"><h2>Bayesian assumptions</h2><p class="detail">P(I) starts at 0.50 as a <em>symmetric demonstration prior</em>, not as a measured historical probability or a claim of ignorance.</p><div id="bayes-controls"></div></div>
+<div class="controls"><h2>Bayesian assumptions</h2>
+<div class="preset-box" role="group" aria-label="Illustrative evidence likelihood scenarios">
+<strong>Evidence likelihood scenarios</strong>
+<p>Starts neutral: P(E | H) = P(E | F) = P(E | B) = 0.50. Equal likelihoods produce no update, not a claim that the real discovery is neutral.</p>
+<div class="preset-row">
+<button type="button" data-evidence-preset="neutral" aria-pressed="true">Neutral</button>
+<button type="button" data-evidence-preset="benign" aria-pressed="false">Favors benign</button>
+<button type="button" data-evidence-preset="backdoor" aria-pressed="false">Favors backdoor</button>
+</div><div class="preset-status" id="preset-status">Neutral evidence</div></div>
+<p class="detail">P(I) starts at 0.50 as a <em>symmetric demonstration prior</em>, not as a measured historical probability or a claim of ignorance.</p><div id="bayes-controls"></div></div>
 <div class="view"><div class="summary"><div class="metrics">
 <div class="metric"><span class="metric-label">P(B) · before E</span><span class="metric-value" id="bayes-before">—</span></div>
 <div class="metric"><span class="metric-label">P(B | E) · after E</span><span class="metric-value" id="bayes-after">—</span></div>

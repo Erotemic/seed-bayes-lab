@@ -12,7 +12,7 @@ from seed_bayes_lab.sensitivity import (
     SLIDER_SPECS, analyze_slider, bayes_delta, bayes_posterior,
     search_delta, search_posterior,
 )
-from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS
+from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
 
 def _equal(actual, expected):
@@ -68,7 +68,7 @@ def test_moving_another_slider_changes_endpoint_badges():
 
 
 def test_arrows_are_evidence_update_sign_not_posterior_movement():
-    scan = analyze_slider(DEFAULT_ASSUMPTIONS, 'prior_intent')
+    scan = analyze_slider({**DEFAULT_ASSUMPTIONS, **EVIDENCE_PRESETS['benign']}, 'prior_intent')
     assert scan.left_delta == 0
     assert scan.right_delta < 0
     assert scan.current_direction == 'decrease'

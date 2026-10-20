@@ -14,11 +14,11 @@ from seed_bayes_lab.sensitivity import (
     SLIDER_SPECS, _zero_numerator, analyze_slider, break_even_regions,
     bayes_delta, search_delta,
 )
-from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS
+from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
 
 def test_bayes_interior_zero_has_expected_likelihood_ratio():
-    state = dict(DEFAULT_ASSUMPTIONS)
+    state = {**DEFAULT_ASSUMPTIONS, **EVIDENCE_PRESETS["benign"]}
     regions = break_even_regions(state, 'likelihood_succeeded')
     assert len(regions) == 1
     point = regions[0]
@@ -31,7 +31,7 @@ def test_bayes_interior_zero_has_expected_likelihood_ratio():
 
 
 def test_endpoint_zero_and_search_interval():
-    state = dict(DEFAULT_ASSUMPTIONS)
+    state = {**DEFAULT_ASSUMPTIONS, **EVIDENCE_PRESETS["benign"]}
     at_zero = break_even_regions(state,'prior_intent')
     assert len(at_zero) == 1 and at_zero[0].start == at_zero[0].end == 0
     compute_limited = break_even_regions(state,'restricted_bits')
@@ -65,7 +65,7 @@ def test_full_range_equality_and_impossible_conditioning():
 
 
 def test_self_invariant_other_dial_changes_break_even():
-    base = dict(DEFAULT_ASSUMPTIONS)
+    base = {**DEFAULT_ASSUMPTIONS, **EVIDENCE_PRESETS["benign"]}
     for key, spec in SLIDER_SPECS.items():
         reference = break_even_regions(base,key)
         assert reference == break_even_regions({**base,key:spec.minimum},key)
@@ -106,3 +106,15 @@ def test_js_python_break_even_consistency():
                 assert x.start == pytest.approx(y['start'],abs=2e-8)
                 assert x.end == pytest.approx(y['end'],abs=2e-8)
                 assert x.interpolated == y['interpolated']
+
+
+def test_neutral_evidence_has_one_full_range_break_even_interval():
+    # All three likelihoods are identical: changing any prior cannot alter
+    # the evidence update. This must be one clean equality interval, not
+    # numerous spurious ticks created by floating-point cancellation.
+    for key in ("prior_intent", "success_given_intent"):
+        regions = break_even_regions(DEFAULT_ASSUMPTIONS, key)
+        assert len(regions) == 1
+        assert regions[0].start == SLIDER_SPECS[key].minimum
+        assert regions[0].end == SLIDER_SPECS[key].maximum
+        assert regions[0].is_interval

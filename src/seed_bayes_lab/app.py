@@ -14,7 +14,10 @@ from seed_bayes_lab.evidence import (
     EVIDENCE_LIKELIHOOD_NOTE, METHOD_OBSERVATION,
     evidence_sources_markdown,
 )
-from seed_bayes_lab.ui_state import initialize_assumptions, reset_assumptions
+from seed_bayes_lab.ui_state import (
+    EVIDENCE_PRESET_LABELS, active_evidence_preset, apply_evidence_preset,
+    initialize_assumptions, reset_assumptions,
+)
 from seed_bayes_lab.glossary import (
     BAYES_EVENTS, BAYES_QUANTITIES, SEARCH_EVENTS, SEARCH_QUANTITIES,
     BAYES_PARAMETERS, SEARCH_PARAMETERS,
@@ -172,6 +175,17 @@ def show_flip_summary(keys: tuple[str, ...]) -> None:
     sensitivities = [analyze_slider(st.session_state, key) for key in keys]
     flipped = [s.spec.label for s in sensitivities if s.can_reverse]
     current = sensitivities[0].current_direction
+    if current == "unchanged":
+        movable = [s.spec.label for s in sensitivities
+                   if {"increase", "decrease"} & s.directions]
+        st.info(
+            "**Current evidence update: zero.** "
+            f"{len(movable)} of {len(keys)} controls can move the update away from "
+            "zero while other inputs stay fixed. "
+            + ("Controls: " + ", ".join(movable) + "." if movable
+               else "No individual control changes its direction.")
+        )
+        return
     st.info(
         f"**Current direction: {current}.** "
         f"{len(flipped)} of {len(keys)} controls can reverse it "
@@ -193,6 +207,29 @@ with bayes:
     st.markdown("Worlds: **honest**, **attempted but failed**, **successfully planted backdoor**.")
     left, right = st.columns([1, 2], gap="large")
     with left:
+        st.markdown("**Evidence likelihood scenarios**")
+        st.caption(
+            "Starts neutral: P(E | H) = P(E | F) = P(E | B) = 0.50. "
+            "Equal likelihoods leave P(B) unchanged; this is a modeling baseline, "
+            "not an assessment of the historical discovery."
+        )
+        active = active_evidence_preset(st.session_state)
+        preset_columns = st.columns(3, gap="small")
+        for (name, label), column in zip(EVIDENCE_PRESET_LABELS.items(), preset_columns):
+            with column:
+                st.button(
+                    label,
+                    key=f"preset_{name}",
+                    type="primary" if name == active else "secondary",
+                    on_click=apply_evidence_preset,
+                    args=(st.session_state, name),
+                    use_container_width=True,
+                    help="Illustrative probabilities, not measured historical evidence",
+                )
+        st.caption(
+            "Current scenario: " +
+            (EVIDENCE_PRESET_LABELS[active] if active else "Custom likelihoods")
+        )
         intent = sensitivity_slider("prior_intent")
         st.caption("The 0.50 default is symmetric for illustration, not an estimated historical probability.")
         success = sensitivity_slider("success_given_intent")
@@ -223,7 +260,8 @@ with bayes:
                 f"**Bayes factor (B vs. not B):** "
                 f"{result.bayes_factor_backdoor if result.bayes_factor_backdoor is not None else 'undefined'}"
             )
-    st.plotly_chart(direction_heatmap(prior, honest_l), use_container_width=True)
+    heatmap = direction_heatmap(prior, honest_l)
+    st.plotly_chart(heatmap, use_container_width=True)
     st.caption("The heatmap varies both malicious-state likelihoods; its values are not observed data.")
 
 with search:
