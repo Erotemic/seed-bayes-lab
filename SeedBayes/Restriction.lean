@@ -11,7 +11,7 @@ Publication selection is outside this model.
 
 Parameters: p=P(I), s=P(B|I,not T), t0=P(T|I), t1=P(T|I,E),
 r=P(B|I,T)/s when s>0. Values are probabilities with r in [0,1].
-- /
+-/
 
 namespace SeedBayes
 
