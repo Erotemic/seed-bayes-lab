@@ -113,7 +113,7 @@ theorem posterior_factorization (p : Prior) (e : Likelihood)
     posteriorBackdoor p e =
       posteriorIntent p e * posteriorSuccessGivenIntent p e := by
   unfold posteriorBackdoor posteriorIntent posteriorSuccessGivenIntent
-  field_simp [hE, hIE] <;> ring
+  field_simp [hE, hIE]
 
 /-- Cross-multiplied posterior odds form of Bayes' rule. -/
 theorem bayes_odds_cross (p : Prior) (e : Likelihood)
@@ -160,7 +160,7 @@ theorem posterior_lt_prior_iff_likelihood_ratio (p : Prior) (e : Likelihood)
   have hNE : notBackdoorEvidenceMass p e =
       priorNotBackdoor p * evidenceGivenNotBackdoor p e := by
     unfold evidenceGivenNotBackdoor
-    field_simp [ne_of_gt hN] <;> ring
+    field_simp [ne_of_gt hN]
   have hZ : evidenceMass p e =
       p.backdoor * e.backdoor + notBackdoorEvidenceMass p e := by
     unfold evidenceMass notBackdoorEvidenceMass
