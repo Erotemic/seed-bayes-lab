@@ -364,6 +364,8 @@
   const CHART_OPTIONS = { responsive: true, displaylogo: false,
     modeBarButtonsToRemove: ['lasso2d','select2d'] };
 
+  // Plotly.js silently ignores plain-string axis/colorbar titles: use {text: ...}.
+  // These layout objects are also checked by tests/test_plots.py.
   function lineFigure(s) {
     const xs = Array.from({length: 101}, (_, i) => i / 100);
     const ys = xs.map(e => finiteBayes({...s, likelihood_succeeded: e}).after);
@@ -377,9 +379,11 @@
        type:'scatter',mode:'markers',marker:{size:11,color:'#c05d33'}}
     ];
     const layout = {title: {text: 'Bayesian evidence sensitivity', font:{size:16}},
-      xaxis: {title: 'P(E | successful backdoor)',range:[0,1]},
-      yaxis: {title: 'P(B | E)',range:[0,1.02],tickformat:'.0%'},
-      margin:{l:65,r:14,t:45,b:65},
+      xaxis: {title: {text: 'P(E | B) - evidence likelihood',standoff:10},
+        range:[0,1],tickformat:'.0%',automargin:true},
+      yaxis: {title: {text: 'P(B | E) - posterior',standoff:8},
+        range:[0,1.02],tickformat:'.0%',automargin:true},
+      margin:{l:76,r:18,t:45,b:76},
       legend:{orientation:'h',y:-0.3},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
     return [traces,layout];
   }
@@ -394,11 +398,12 @@
     const traces = [{x:v,y:v,z:z.map(row=>row.map(x=>x===null?null:x*100)),
       type:'heatmap',colorscale:'RdBu',reversescale:true,
       zmin:-lim*100,zmax:lim*100,
-      colorbar:{title:'\u0394 pp'},
+      colorbar:{title:{text:'\u0394 (pp)',side:'top'},len:0.75},
       hovertemplate:'P(E | failed): %{x:.2f}<br>P(E | success): %{y:.2f}<br>\u0394: %{z:+.3f} pp<extra></extra>'}];
     const layout = {title:{text:'Sign of the update',font:{size:16}},
-      xaxis:{title:'P(E | failed attempt)'},yaxis:{title:'P(E | backdoor)'},
-      margin:{l:65,r:12,t:45,b:65},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
+      xaxis:{title:{text:'P(E | F)',standoff:10},tickformat:'.0%',automargin:true},
+      yaxis:{title:{text:'P(E | B)',standoff:8},tickformat:'.0%',automargin:true},
+      margin:{l:76,r:24,t:45,b:76},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
     return [traces,layout];
   }
 
@@ -419,9 +424,9 @@
       name:'Current P(B | published,T)',type:'scatter',mode:'markers',
       marker:{size:10,color:'#b85552'}});
     const layout={title:{text:'Method and publication sensitivity',font:{size:16}},
-      xaxis:{title:'Rarity k (q = 2^-k)',range:[5,80]},
-      yaxis:{title:'Probability',tickformat:'.0%',range:[0,1.02]},
-      margin:{l:65,r:12,t:45,b:80},legend:{orientation:'h',y:-0.3},
+      xaxis:{title:{text:'Target rarity k (bits)',standoff:10},range:[5,80],automargin:true},
+      yaxis:{title:{text:'Probability',standoff:8},tickformat:'.0%',range:[0,1.02],automargin:true},
+      margin:{l:76,r:18,t:45,b:86},legend:{orientation:'h',y:-0.3},
       paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
     return [traces,layout];
   }
@@ -490,6 +495,6 @@
 
   root.SeedBayesOffline = {
     finiteBayes, methodUpdate, publishedMethodUpdate, independentSearch, direction, formatter,
-    zeroNumerator, breakEvens, sweep, mount
+    zeroNumerator, breakEvens, sweep, mount, lineFigure, heatmapFigure, searchFigure
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

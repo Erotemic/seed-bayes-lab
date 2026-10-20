@@ -48,12 +48,12 @@ def evidence_sweep(prior: Prior, likelihoods: Likelihoods, samples: int = 201) -
         pass
     fig.update_layout(
         template="plotly_white", title="How the evidence likelihood changes the posterior",
-        xaxis_title="P(evidence | successful planted backdoor)",
-        yaxis_title="P(successfully planted backdoor | evidence)",
-        yaxis=dict(tickformat=".0%", range=[0, 1]),
-        xaxis=dict(range=[0, 1]),
+        xaxis_title="P(E | B) - evidence likelihood",
+        yaxis_title="P(B | E) - posterior",
+        xaxis=dict(range=[0, 1], tickformat=".0%", automargin=True),
+        yaxis=dict(tickformat=".0%", range=[0, 1], automargin=True),
         legend=dict(orientation="h", y=-0.25),
-        margin=dict(l=35, r=25, t=55, b=65),
+        margin=dict(l=76, r=25, t=55, b=78),
     )
     return fig
 
@@ -66,7 +66,7 @@ def direction_heatmap(prior: Prior, honest_likelihood: float, samples: int = 41)
         for j, l_f in enumerate(values):
             try:
                 result = update(prior, Likelihoods(honest_likelihood, float(l_f), float(l_b)))
-                z[i, j] = result.delta_backdoor
+                z[i, j] = 100 * result.delta_backdoor
             except ValueError:
                 pass
     lim = max(float(np.nanmax(np.abs(z))), 1e-10)
@@ -74,19 +74,21 @@ def direction_heatmap(prior: Prior, honest_likelihood: float, samples: int = 41)
         go.Heatmap(
             x=values, y=values, z=z, zmin=-lim, zmax=lim,
             colorscale="RdBu", reversescale=True,
-            colorbar=dict(title="Posterior - prior", tickformat="+.0%"),
+            colorbar=dict(title=dict(text="Δ (pp)", side="top"), tickformat="+.0f"),
             hovertemplate=(
                 "P(E | failed attempt): %{x:.2f}"
                 "<br>P(E | successful backdoor): %{y:.2f}"
-                "<br>Update: %{z:+.3%}<extra></extra>"
+                "<br>Update: %{z:+.2f} pp<extra></extra>"
             ),
         )
     )
     fig.update_layout(
         template="plotly_white", title="Direction of the Bayesian update",
-        xaxis_title="P(evidence | attempted but failed)",
-        yaxis_title="P(evidence | successful backdoor)",
-        margin=dict(l=35, r=20, t=55, b=35),
+        xaxis_title="P(E | F)",
+        yaxis_title="P(E | B)",
+        xaxis=dict(tickformat=".0%", automargin=True),
+        yaxis=dict(tickformat=".0%", automargin=True),
+        margin=dict(l=76, r=24, t=55, b=78),
     )
     return fig
 
@@ -126,10 +128,12 @@ def search_sweep(
         ))
     fig.update_layout(
         template="plotly_white", title="Selection freedom, attack knowledge, and publication policy",
-        xaxis_title="Secret property rarity (k bits, q = 2^-k)",
-        yaxis_title="Probability", yaxis=dict(tickformat=".0%", range=[0, 1.02]),
+        xaxis_title="Target rarity k (bits)",
+        yaxis_title="Probability",
+        xaxis=dict(automargin=True),
+        yaxis=dict(tickformat=".0%", range=[0, 1.02], automargin=True),
         legend=dict(orientation="h", y=-0.26),
-        margin=dict(l=35, r=20, t=55, b=70),
+        margin=dict(l=76, r=20, t=55, b=86),
     )
     return fig
 
@@ -168,12 +172,13 @@ def budget_slider_figure(
     ) for b in budgets]
     fig.update_layout(
         template="plotly_white", title="Success probability versus secret-property rarity",
-        xaxis_title="Vulnerability rarity (k bits, q = 2^-k)",
-        yaxis_title="Probability of finding at least one candidate",
-        yaxis=dict(tickformat=".0%", range=[0, 1.02]),
+        xaxis_title="Target rarity k (bits)",
+        yaxis_title="P(find at least one target)",
+        xaxis=dict(automargin=True),
+        yaxis=dict(tickformat=".0%", range=[0, 1.02], automargin=True),
         sliders=[dict(active=budgets.index(initial), currentvalue=dict(prefix="Compute budget: 2^"),
                       pad=dict(t=48), steps=steps)],
         legend=dict(orientation="h", y=-0.36),
-        margin=dict(l=40, r=25, t=60, b=120),
+        margin=dict(l=76, r=25, t=60, b=130),
     )
     return fig

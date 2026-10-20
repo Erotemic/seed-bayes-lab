@@ -16,7 +16,9 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
 - `src/seed_bayes_lab/search.py`: illustrative independent-candidate search,
   limits from candidate freedom and computing budget, and publication selection.
 - `src/seed_bayes_lab/plots.py`: reusable Plotly interactive curves, a directional
-  heatmap, and a no-server budget slider.
+  heatmap, and a no-server budget slider. Every graph has labeled X/Y axes;
+  probability axes show percentages, search rarity uses bits, and heatmap
+  colorbars report the evidence update in percentage points.
 - `src/seed_bayes_lab/app.py`: Streamlit explorer with editable assumptions, explicit
   recovered-evidence description, source links, and reset-all button.
 - `src/seed_bayes_lab/sensitivity.py`: complete one-dial-at-a-time directional
