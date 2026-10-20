@@ -6,7 +6,7 @@ import streamlit as st
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
 from seed_bayes_lab.sensitivity import (
-    SLIDER_SPECS, BAYES_SLIDERS, SEARCH_SLIDERS,
+    SLIDER_SPECS, BAYES_SLIDERS, SEARCH_SLIDERS, RESTRICTION_SLIDERS,
     analyze_slider, format_delta_pp, direction, BreakEvenRegion,
 )
 from seed_bayes_lab.evidence import (
@@ -21,9 +21,11 @@ from seed_bayes_lab.ui_state import (
 from seed_bayes_lab.glossary import (
     BAYES_EVENTS, BAYES_QUANTITIES, SEARCH_EVENTS, SEARCH_QUANTITIES,
     BAYES_PARAMETERS, SEARCH_PARAMETERS,
+    RESTRICTION_EVENTS, RESTRICTION_QUANTITIES, RESTRICTION_PARAMETERS,
 )
-from seed_bayes_lab.plots import direction_heatmap, evidence_sweep, search_sweep
+from seed_bayes_lab.plots import direction_heatmap, evidence_sweep, search_sweep, restriction_sweep
 from seed_bayes_lab.search import method_observation_update, planted_success
+from seed_bayes_lab.restriction import restriction_update, restriction_support_warning
 
 st.set_page_config(page_title="Seed Bayes Lab", page_icon="∴", layout="wide")
 st.title("Seed Bayes Lab")
@@ -152,7 +154,7 @@ def sensitivity_slider(key: str) -> float | int:
     sens = analyze_slider(st.session_state, key)
     st.markdown(_break_even_ruler(key, sens.break_evens), unsafe_allow_html=True)
     st.caption(_break_even_caption(key, sens.break_evens))
-    after_label = "P(B | E)" if spec.group == "bayes" else "P(B | J,T)"
+    after_label = "P(B | J,T)" if spec.group == "search" else "P(B | E)"
     left, right = st.columns(2)
     with left:
         st.markdown(_endpoint_card("MIN", spec.minimum, sens.left_posterior,
@@ -200,69 +202,122 @@ bayes, search, glossary, assumptions = st.tabs([
 ])
 
 with bayes:
-    st.subheader("Three-world finite model")
-    st.caption(EVIDENCE_LIKELIHOOD_NOTE)
-    st.caption("B denotes a deliberately planted backdoor; I denotes intent to plant one.")
-    st.caption("Endpoint arrows show the evidence update at MIN/MAX. The purple tick on the companion ruler marks Δ = 0; a purple segment marks an equality interval. These locations depend only on the other dials. Approximate ticks may lie between selectable slider steps.")
-    st.markdown("Worlds: **honest**, **attempted but failed**, **successfully planted backdoor**.")
-    left, right = st.columns([1, 2], gap="large")
-    with left:
-        st.markdown("**Evidence likelihood scenarios**")
-        st.caption(
-            "Starts neutral: P(E | H) = P(E | F) = P(E | B) = 0.50. "
-            "Equal likelihoods leave P(B) unchanged; this is a modeling baseline, "
-            "not an assessment of the historical discovery."
-        )
-        active = active_evidence_preset(st.session_state)
-        preset_columns = st.columns(3, gap="small")
-        for (name, label), column in zip(EVIDENCE_PRESET_LABELS.items(), preset_columns):
-            with column:
-                st.button(
-                    label,
-                    key=f"preset_{name}",
-                    type="primary" if name == active else "secondary",
-                    on_click=apply_evidence_preset,
-                    args=(st.session_state, name),
-                    use_container_width=True,
-                    help="Illustrative probabilities, not measured historical evidence",
-                )
-        st.caption(
-            "Current scenario: " +
-            (EVIDENCE_PRESET_LABELS[active] if active else "Custom likelihoods")
-        )
-        intent = sensitivity_slider("prior_intent")
-        st.caption("The 0.50 default is symmetric for illustration, not an estimated historical probability.")
-        success = sensitivity_slider("success_given_intent")
-        st.markdown("**Likelihood of the discovered evidence**")
-        honest_l = sensitivity_slider("likelihood_honest")
-        failed_l = sensitivity_slider("likelihood_failed")
-        succeeded_l = sensitivity_slider("likelihood_succeeded")
-    show_flip_summary(tuple(spec.key for spec in BAYES_SLIDERS))
-    prior = Prior.from_intent_success(intent, success)
-    likelihoods = Likelihoods(honest_l, failed_l, succeeded_l)
-    with right:
-        try:
-            result = update(prior, likelihoods)
-        except ValueError:
-            st.error("The assumed evidence has probability zero; conditioning is undefined.")
-        else:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("P(B)", f"{result.prior_backdoor:.2%}")
-            c1.caption("Before observing E")
-            c2.metric("P(B | E)", f"{result.posterior_backdoor:.2%}",
-                      delta=f"{result.delta_backdoor:+.2%}", delta_color="inverse")
-            c2.caption("After observing E")
-            c3.metric("P(I | E)", f"{result.posterior_intent:.2%}")
-            c3.caption("Malicious intent after E")
-            st.plotly_chart(evidence_sweep(prior, likelihoods), use_container_width=True)
-            st.markdown(
-                f"**Direction:** {result.direction()} · "
-                f"**Bayes factor (B vs. not B):** "
-                f"{result.bayes_factor_backdoor if result.bayes_factor_backdoor is not None else 'undefined'}"
+    st.caption(
+        "Two **alternative** explanations of evidence E. Do not multiply their "
+        "updates: that would count the same discovery twice."
+    )
+    likelihood_view, restriction_view = st.tabs([
+        "Likelihood assumptions", "Effective restriction",
+    ])
+    with likelihood_view:
+        st.subheader("Three-world finite model")
+        st.caption(EVIDENCE_LIKELIHOOD_NOTE)
+        st.caption("B denotes a deliberately planted backdoor; I denotes intent to plant one.")
+        st.caption("Endpoint arrows show the evidence update at MIN/MAX. The purple tick on the companion ruler marks Δ = 0; a purple segment marks an equality interval. These locations depend only on the other dials. Approximate ticks may lie between selectable slider steps.")
+        st.markdown("Worlds: **honest**, **attempted but failed**, **successfully planted backdoor**.")
+        left, right = st.columns([1, 2], gap="large")
+        with left:
+            st.markdown("**Evidence likelihood scenarios**")
+            st.caption(
+                "Starts neutral: P(E | H) = P(E | F) = P(E | B) = 0.50. "
+                "Equal likelihoods leave P(B) unchanged; this is a modeling baseline, "
+                "not an assessment of the historical discovery."
             )
-    heatmap = direction_heatmap(prior, honest_l)
-    st.plotly_chart(heatmap, use_container_width=True)
-    st.caption("The heatmap varies both malicious-state likelihoods; its values are not observed data.")
+            active = active_evidence_preset(st.session_state)
+            preset_columns = st.columns(3, gap="small")
+            for (name, label), column in zip(EVIDENCE_PRESET_LABELS.items(), preset_columns):
+                with column:
+                    st.button(
+                        label,
+                        key=f"preset_{name}",
+                        type="primary" if name == active else "secondary",
+                        on_click=apply_evidence_preset,
+                        args=(st.session_state, name),
+                        use_container_width=True,
+                        help="Illustrative probabilities, not measured historical evidence",
+                    )
+            st.caption(
+                "Current scenario: " +
+                (EVIDENCE_PRESET_LABELS[active] if active else "Custom likelihoods")
+            )
+            intent = sensitivity_slider("prior_intent")
+            st.caption("The 0.50 default is symmetric for illustration, not an estimated historical probability.")
+            success = sensitivity_slider("success_given_intent")
+            st.markdown("**Likelihood of the discovered evidence**")
+            honest_l = sensitivity_slider("likelihood_honest")
+            failed_l = sensitivity_slider("likelihood_failed")
+            succeeded_l = sensitivity_slider("likelihood_succeeded")
+        show_flip_summary(tuple(spec.key for spec in BAYES_SLIDERS))
+        prior = Prior.from_intent_success(intent, success)
+        likelihoods = Likelihoods(honest_l, failed_l, succeeded_l)
+        with right:
+            try:
+                result = update(prior, likelihoods)
+            except ValueError:
+                st.error("The assumed evidence has probability zero; conditioning is undefined.")
+            else:
+                c1, c2, c3 = st.columns(3)
+                c1.metric("P(B)", f"{result.prior_backdoor:.2%}")
+                c1.caption("Before observing E")
+                c2.metric("P(B | E)", f"{result.posterior_backdoor:.2%}",
+                          delta=f"{result.delta_backdoor:+.2%}", delta_color="inverse")
+                c2.caption("After observing E")
+                c3.metric("P(I | E)", f"{result.posterior_intent:.2%}")
+                c3.caption("Malicious intent after E")
+                st.plotly_chart(evidence_sweep(prior, likelihoods), use_container_width=True)
+                st.markdown(
+                    f"**Direction:** {result.direction()} · "
+                    f"**Bayes factor (B vs. not B):** "
+                    f"{result.bayes_factor_backdoor if result.bayes_factor_backdoor is not None else 'undefined'}"
+                )
+        heatmap = direction_heatmap(prior, honest_l)
+        st.plotly_chart(heatmap, use_container_width=True)
+        st.caption("The heatmap varies both malicious-state likelihoods; its values are not observed data.")
+
+    with restriction_view:
+        st.subheader("Did E make effective restriction more plausible?")
+        st.markdown(
+            "This alternative holds **P(I | E) = P(I)** fixed. **T** means the "
+            "designer was genuinely constrained in selecting vulnerable curves, "
+            "not merely that published seeds match a timestamp generator. "
+            "The evidence changes our belief from **P(T | I) = t0** to "
+            "**P(T | I,E) = t1**. A restriction reduces conditional attack "
+            "success by a factor **r** (0 = impossible, 1 = no effect)."
+        )
+        st.info(
+            "These five numbers are hypothetical. This is a separate explanation "
+            "of the same E, not an additional multiplier to the likelihood model. "
+            "Publication selection and changes in intent are held out."
+        )
+        left, right = st.columns([1, 2], gap="large")
+        with left:
+            p = sensitivity_slider("restriction_intent")
+            s = sensitivity_slider("restriction_baseline_success")
+            t0 = sensitivity_slider("restriction_before")
+            t1 = sensitivity_slider("restriction_after")
+            r = sensitivity_slider("restriction_ratio")
+        show_flip_summary(tuple(spec.key for spec in RESTRICTION_SLIDERS))
+        with right:
+            result = restriction_update(p, s, t0, t1, r)
+            a, b, c = st.columns(3)
+            a.metric("P(B)", f"{result.before:.2%}")
+            a.caption("Before E in the restriction model")
+            b.metric("P(B | E)", f"{result.after:.2%}",
+                     delta=f"{result.delta:+.2%}", delta_color="inverse")
+            b.caption("After E in the restriction model")
+            c.metric("Posterior / prior", "undefined" if result.multiplier is None
+                     else f"{result.multiplier:.3f}×")
+            c.caption("Undefined when P(B) = 0")
+            warning = restriction_support_warning(p, t0, t1)
+            if warning:
+                st.warning(warning)
+            st.plotly_chart(restriction_sweep(p, s, t0, t1, r),
+                            use_container_width=True)
+            st.caption(
+                "Exact identity: Δ = −p · s · (t1−t0) · (1−r). "
+                "The direction can decrease only if E increases belief in restriction "
+                "and restriction actually makes the attack harder, holding intent fixed."
+            )
 
 with search:
     st.subheader("Method observation under 100% malicious intent")
@@ -325,6 +380,11 @@ with glossary:
     _show_entries(BAYES_QUANTITIES)
     st.markdown("#### The five Bayesian input dials")
     _show_parameters(BAYES_PARAMETERS)
+    st.markdown("### Effective restriction · alternative explanation of E")
+    st.markdown("Here **T** is a genuine constraint and **E** remains the observed reconstruction. The model assumes **P(I|E)=P(I)** and that E affects backdoor success only by changing **P(T|I)**. It is **not multiplied** into the likelihood model.")
+    _show_entries(RESTRICTION_EVENTS)
+    _show_entries(RESTRICTION_QUANTITIES)
+    _show_parameters(RESTRICTION_PARAMETERS)
     st.markdown("### Search and publication model · separate tab")
     st.markdown("Here **I is fixed as true**; the designer chooses T or U before evaluating candidate curves. J represents publication. Conditioning on T after J is not conditioning on E.")
     _show_entries(SEARCH_EVENTS)
@@ -351,6 +411,10 @@ with assumptions:
     It does not determine whether NIST P-256 was backdoored, establish a historical
     1997 search budget, estimate the prevalence of undiscovered vulnerabilities,
     or prove that timestamp-seeding was a compulsory restriction on designers.
+
+    The effective-restriction model is a separate interpretation of the same E; its
+    P(I|E)=P(I) and conditional-success invariances are premises, not findings.
+    Multiplying the two updates would double-count E.
 
     The Lean development proves the algebraic identities with explicit hypotheses.
     The Python charts instantiate hypotheses chosen by the user; they are not

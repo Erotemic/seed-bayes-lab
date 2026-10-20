@@ -19,6 +19,7 @@ from typing import Mapping
 import magnet_theory as theory
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
+from seed_bayes_lab.restriction import restriction_update
 from seed_bayes_lab.search import method_observation_update, planted_success, publish_probability
 
 TOLERANCE = 1e-13
@@ -60,7 +61,15 @@ SEARCH_SLIDERS = (
     SliderSpec("publish_failed", "P(publish | failed attempt)", 0.0, 1.0, 0.01, "search"),
 )
 
-SLIDER_SPECS = {s.key: s for s in (*BAYES_SLIDERS, *SEARCH_SLIDERS)}
+RESTRICTION_SLIDERS = (
+    SliderSpec("restriction_intent", "P(I): malicious intent", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_baseline_success", "P(B | I, not T): baseline success", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_before", "P(T | I): restriction belief before E", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_after", "P(T | I,E): restriction belief after E", 0.0, 1.0, 0.01, "restriction"),
+    SliderSpec("restriction_ratio", "r: relative success when restricted", 0.0, 1.0, 0.01, "restriction"),
+)
+
+SLIDER_SPECS = {s.key: s for s in (*BAYES_SLIDERS, *SEARCH_SLIDERS, *RESTRICTION_SLIDERS)}
 
 
 def bayes_delta(values: Mapping[str, float | int]) -> float | None:
@@ -119,6 +128,23 @@ def search_posterior(values: Mapping[str, float | int]) -> float | None:
     ).after
 
 
+def restriction_result(values: Mapping[str, float | int]):
+    """Evaluate the standalone effective-restriction explanation of E."""
+    return restriction_update(
+        values["restriction_intent"], values["restriction_baseline_success"],
+        values["restriction_before"], values["restriction_after"],
+        values["restriction_ratio"],
+    )
+
+
+def restriction_delta(values: Mapping[str, float | int]) -> float:
+    return restriction_result(values).delta
+
+
+def restriction_posterior(values: Mapping[str, float | int]) -> float:
+    return restriction_result(values).after
+
+
 def direction(delta: float | None) -> str:
     if delta is None:
         return "undefined"
@@ -174,6 +200,11 @@ def _zero_numerator(values: Mapping[str, float | int], group: str) -> float | No
     difference falls below the *display* tolerance: negligible changes are
     not automatically mathematical break-even points.
     """
+    if group == "restriction":
+        result = restriction_result(values)
+        # The exact polynomial derived in SeedBayes.Restriction. All settings
+        # are defined, even at a zero prior (when the ratio is undefined).
+        return result.delta
     if group == "bayes":
         intent = float(values["prior_intent"])
         success = float(values["success_given_intent"])
@@ -347,8 +378,12 @@ def analyze_slider(values: Mapping[str, float | int], key: str) -> DialSensitivi
     well. Undefined conditioning is excluded from extrema, never set to zero.
     """
     spec = SLIDER_SPECS[key]
-    evaluator = bayes_delta if spec.group == "bayes" else search_delta
-    posterior_evaluator = bayes_posterior if spec.group == "bayes" else search_posterior
+    evaluators = {
+        "bayes": (bayes_delta, bayes_posterior),
+        "search": (search_delta, search_posterior),
+        "restriction": (restriction_delta, restriction_posterior),
+    }
+    evaluator, posterior_evaluator = evaluators[spec.group]
     current = evaluator(values)
     current_posterior = posterior_evaluator(values)
     all_deltas: list[float] = []

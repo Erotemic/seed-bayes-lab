@@ -13,14 +13,14 @@ import pytest
 from seed_bayes_lab.model import Likelihoods, Prior, update
 from seed_bayes_lab.search import method_observation_update, planted_success
 from seed_bayes_lab.sensitivity import (
-    SLIDER_SPECS, analyze_slider, bayes_delta, search_delta, direction,
+    SLIDER_SPECS, analyze_slider, bayes_delta, search_delta, restriction_delta, direction,
     format_delta_pp,
 )
 from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
 
 def test_every_slider_is_scanned_inclusive_with_defaults():
-    assert len(SLIDER_SPECS) == 13
+    assert len(SLIDER_SPECS) == 18
     assert set(SLIDER_SPECS) == set(DEFAULT_ASSUMPTIONS)
     for key, spec in SLIDER_SPECS.items():
         positions = spec.positions()
@@ -131,6 +131,11 @@ def test_deltas_match_original_probability_implementations():
             values["prior_restricted"],st,su,values["publish_failed"]
         ).delta
         assert search_delta(values) == pytest.approx(expected_method)
+        assert restriction_delta(values) == pytest.approx(
+            -(values["restriction_intent"] * values["restriction_baseline_success"])
+            * (values["restriction_after"] - values["restriction_before"])
+            * (1 - values["restriction_ratio"])
+        )
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node is optional")
@@ -147,10 +152,10 @@ def test_offline_javascript_agrees_with_python():
     node_code = '''
         require(process.argv[1]);
         const cases = JSON.parse(process.argv[2]);
-        const {finiteBayes,methodUpdate} = globalThis.SeedBayesOffline;
+        const {finiteBayes,methodUpdate,restrictionUpdate} = globalThis.SeedBayesOffline;
         console.log(JSON.stringify(cases.map(s => {
-            const b=finiteBayes(s),m=methodUpdate(s);
-            return [b.before,b.after,b.delta,m.before,m.after,m.delta];
+            const b=finiteBayes(s),m=methodUpdate(s),r=restrictionUpdate(s);
+            return [b.before,b.after,b.delta,m.before,m.after,m.delta,r.before,r.after,r.delta];
         })));
     '''
     response = subprocess.run(["node", "-e", node_code, str(script),json.dumps(cases)],
@@ -171,6 +176,13 @@ def test_offline_javascript_agrees_with_python():
                              state["compute_bits"],state["know_unrestricted"])
         method = method_observation_update(state["prior_restricted"],st,su,state["publish_failed"])
         expected += [method.before,method.after,method.delta]
+        from seed_bayes_lab.restriction import restriction_update
+        rr = restriction_update(
+            state["restriction_intent"], state["restriction_baseline_success"],
+            state["restriction_before"], state["restriction_after"],
+            state["restriction_ratio"],
+        )
+        expected += [rr.before,rr.after,rr.delta]
         for actual, want in zip(vals,expected):
             if want is None:
                 assert actual is None

@@ -19,6 +19,20 @@ inputs are **not** established by Lean: only the conditional algebra is.
 | `bayes_break_even_iff`, `bayes_break_even_likelihood_iff` | `sensitivity.break_even_regions` | Algebraic conditions for equal posterior and prior |
 | `scalar_delta_agrees`, `scalar_numerator_agrees` | `offline.js:finiteBayes`, `sensitivity._zero_numerator` | Scalar formulas are the same finite model |
 
+## Alternative effective-restriction explanation
+
+| Lean declaration | Production code | Mathematical claim |
+|---|---|---|
+| `restrictionFactor`, `restrictionBefore`, `restrictionAfter` | `restriction.restriction_update`, `offline.js:restrictionUpdate` | Marginal backdoor probabilities for before/after restriction beliefs |
+| `restriction_delta_formula` | `restriction.RestrictionUpdate.delta`, `sensitivity._zero_numerator` | Exact polynomial `-p*s*(t1-t0)*(1-r)` |
+| `restriction_nonincrease`, `restriction_strict_decrease` | `restriction.restriction_update`, slider directions | Non-increasing update if belief in restriction increases and restriction cannot help |
+| `restriction_break_even_iff`, `restriction_unchanged` | `sensitivity.break_even_regions`, offline break-even ticks | Break-even at `p=0`, `s=0`, `t0=t1` or `r=1` |
+
+These proofs are conditional arithmetic. In particular, they assume intent and
+conditional success rates are unchanged by E, the model has no publication
+selection, and `T` is an effective constraint rather than mere generator
+provenance. The likelihood and restriction models cannot be multiplied together.
+
 ## Search and publication
 
 | Lean declaration | Production code | Covered identity |
@@ -72,6 +86,8 @@ optional dependency.
 - 8 publication-conditioned method configurations, including publication-only
   success, equal success, and positive/negative updates.
 - 7 independent-search configurations with natural trial counts `2^b`.
+- 9 effective-restriction configurations, including neutrality, both update
+  directions, 100% intent, and all four break-even factors.
 
 `scripts/generate_formal_fixtures.py` evaluates those formulas using Python's
 exact `fractions.Fraction`, then produces `SeedBayes/Fixtures.lean`. This is not
@@ -80,7 +96,7 @@ Lean file independently **proves** each expected value with `norm_num`. The
 proof file is imported by `SeedBayes.lean`, so `lake build SeedBayes` checks it.
 
 `tests/test_formal_conformance.py` checks that the generated proof file is
-fresh, then evaluates the **production** `model.py`, `search.py`, and `offline.js`
+fresh, then evaluates the **production** `model.py`, `restriction.py`, `search.py`, and `offline.js`
 functions against the same exact rational answers. Existing property tests
 and Python–JavaScript parity tests cover more slider settings and edge cases.
 

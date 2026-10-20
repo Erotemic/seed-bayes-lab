@@ -1,32 +1,252 @@
 {
   "bayes": [
-    {"name": "default", "intent": "1/2", "success": "3/10", "lh": "4/5", "lf": "3/5", "lb": "1/5"},
-    {"name": "equal likelihoods", "intent": "2/5", "success": "3/4", "lh": "2/3", "lf": "2/3", "lb": "2/3"},
-    {"name": "certain intent", "intent": "1", "success": "2/5", "lh": "9/10", "lf": "4/5", "lb": "1/10"},
-    {"name": "certain success", "intent": "1", "success": "1", "lh": "1/10", "lf": "1/10", "lb": "1/2"},
-    {"name": "no intent", "intent": "0", "success": "4/5", "lh": "1/3", "lf": "2/3", "lb": "0"},
-    {"name": "evidence supports backdoor", "intent": "3/4", "success": "1/2", "lh": "1/4", "lf": "1/5", "lb": "4/5"},
-    {"name": "exact break even", "intent": "1/2", "success": "3/10", "lh": "4/5", "lf": "3/5", "lb": "61/85"},
-    {"name": "evidence impossible under backdoor", "intent": "1/2", "success": "1/2", "lh": "1/2", "lf": "1/4", "lb": "0"},
-    {"name": "evidence certain", "intent": "1/4", "success": "1/4", "lh": "1", "lf": "1", "lb": "1"}
+    {
+      "name": "default",
+      "intent": "1/2",
+      "success": "3/10",
+      "lh": "4/5",
+      "lf": "3/5",
+      "lb": "1/5"
+    },
+    {
+      "name": "equal likelihoods",
+      "intent": "2/5",
+      "success": "3/4",
+      "lh": "2/3",
+      "lf": "2/3",
+      "lb": "2/3"
+    },
+    {
+      "name": "certain intent",
+      "intent": "1",
+      "success": "2/5",
+      "lh": "9/10",
+      "lf": "4/5",
+      "lb": "1/10"
+    },
+    {
+      "name": "certain success",
+      "intent": "1",
+      "success": "1",
+      "lh": "1/10",
+      "lf": "1/10",
+      "lb": "1/2"
+    },
+    {
+      "name": "no intent",
+      "intent": "0",
+      "success": "4/5",
+      "lh": "1/3",
+      "lf": "2/3",
+      "lb": "0"
+    },
+    {
+      "name": "evidence supports backdoor",
+      "intent": "3/4",
+      "success": "1/2",
+      "lh": "1/4",
+      "lf": "1/5",
+      "lb": "4/5"
+    },
+    {
+      "name": "exact break even",
+      "intent": "1/2",
+      "success": "3/10",
+      "lh": "4/5",
+      "lf": "3/5",
+      "lb": "61/85"
+    },
+    {
+      "name": "evidence impossible under backdoor",
+      "intent": "1/2",
+      "success": "1/2",
+      "lh": "1/2",
+      "lf": "1/4",
+      "lb": "0"
+    },
+    {
+      "name": "evidence certain",
+      "intent": "1/4",
+      "success": "1/4",
+      "lh": "1",
+      "lf": "1",
+      "lb": "1"
+    }
   ],
   "publication": [
-    {"name": "always publish", "alpha": "1/2", "st": "1/10", "su": "4/5", "rho": "1"},
-    {"name": "failure selection", "alpha": "1/2", "st": "1/10", "su": "4/5", "rho": "1/5"},
-    {"name": "success only", "alpha": "1/2", "st": "1/10", "su": "4/5", "rho": "0"},
-    {"name": "restricted method certain", "alpha": "1", "st": "2/5", "su": "1/5", "rho": "1/2"},
-    {"name": "equal success", "alpha": "1/4", "st": "1/2", "su": "1/2", "rho": "3/4"},
-    {"name": "method increases backdoor", "alpha": "3/5", "st": "4/5", "su": "1/5", "rho": "1/4"},
-    {"name": "general decrease", "alpha": "2/3", "st": "1/4", "su": "2/3", "rho": "3/5"},
-    {"name": "success at extreme", "alpha": "1/5", "st": "1", "su": "0", "rho": "1/3"}
+    {
+      "name": "always publish",
+      "alpha": "1/2",
+      "st": "1/10",
+      "su": "4/5",
+      "rho": "1"
+    },
+    {
+      "name": "failure selection",
+      "alpha": "1/2",
+      "st": "1/10",
+      "su": "4/5",
+      "rho": "1/5"
+    },
+    {
+      "name": "success only",
+      "alpha": "1/2",
+      "st": "1/10",
+      "su": "4/5",
+      "rho": "0"
+    },
+    {
+      "name": "restricted method certain",
+      "alpha": "1",
+      "st": "2/5",
+      "su": "1/5",
+      "rho": "1/2"
+    },
+    {
+      "name": "equal success",
+      "alpha": "1/4",
+      "st": "1/2",
+      "su": "1/2",
+      "rho": "3/4"
+    },
+    {
+      "name": "method increases backdoor",
+      "alpha": "3/5",
+      "st": "4/5",
+      "su": "1/5",
+      "rho": "1/4"
+    },
+    {
+      "name": "general decrease",
+      "alpha": "2/3",
+      "st": "1/4",
+      "su": "2/3",
+      "rho": "3/5"
+    },
+    {
+      "name": "success at extreme",
+      "alpha": "1/5",
+      "st": "1",
+      "su": "0",
+      "rho": "1/3"
+    }
   ],
   "search": [
-    {"name": "one low rarity", "k": 1, "freedom": 0, "budget": 3},
-    {"name": "two draws", "k": 1, "freedom": 1, "budget": 3},
-    {"name": "budget capped", "k": 2, "freedom": 3, "budget": 1},
-    {"name": "four draws", "k": 3, "freedom": 2, "budget": 3},
-    {"name": "four rare draws", "k": 4, "freedom": 3, "budget": 2},
-    {"name": "sixteen draws", "k": 5, "freedom": 4, "budget": 4},
-    {"name": "single rare draw", "k": 6, "freedom": 0, "budget": 0}
+    {
+      "name": "one low rarity",
+      "k": 1,
+      "freedom": 0,
+      "budget": 3
+    },
+    {
+      "name": "two draws",
+      "k": 1,
+      "freedom": 1,
+      "budget": 3
+    },
+    {
+      "name": "budget capped",
+      "k": 2,
+      "freedom": 3,
+      "budget": 1
+    },
+    {
+      "name": "four draws",
+      "k": 3,
+      "freedom": 2,
+      "budget": 3
+    },
+    {
+      "name": "four rare draws",
+      "k": 4,
+      "freedom": 3,
+      "budget": 2
+    },
+    {
+      "name": "sixteen draws",
+      "k": 5,
+      "freedom": 4,
+      "budget": 4
+    },
+    {
+      "name": "single rare draw",
+      "k": 6,
+      "freedom": 0,
+      "budget": 0
+    }
+  ],
+  "restriction": [
+    {
+      "name": "neutral restriction belief",
+      "p": "1/2",
+      "s": "3/10",
+      "t0": "1/2",
+      "t1": "1/2",
+      "r": "1/2"
+    },
+    {
+      "name": "more confident restriction",
+      "p": "1/2",
+      "s": "3/10",
+      "t0": "1/5",
+      "t1": "4/5",
+      "r": "1/2"
+    },
+    {
+      "name": "less confident restriction",
+      "p": "1/2",
+      "s": "3/10",
+      "t0": "4/5",
+      "t1": "1/5",
+      "r": "1/2"
+    },
+    {
+      "name": "certain malicious intent",
+      "p": "1",
+      "s": "2/5",
+      "t0": "1/4",
+      "t1": "3/4",
+      "r": "1/5"
+    },
+    {
+      "name": "no malicious intent",
+      "p": "0",
+      "s": "1/2",
+      "t0": "1/5",
+      "t1": "4/5",
+      "r": "1/10"
+    },
+    {
+      "name": "restriction no effect",
+      "p": "1/2",
+      "s": "1/2",
+      "t0": "0",
+      "t1": "1",
+      "r": "1"
+    },
+    {
+      "name": "restriction rules out success",
+      "p": "3/4",
+      "s": "1/2",
+      "t0": "0",
+      "t1": "1",
+      "r": "0"
+    },
+    {
+      "name": "no baseline success",
+      "p": "1/2",
+      "s": "0",
+      "t0": "1/5",
+      "t1": "4/5",
+      "r": "1/2"
+    },
+    {
+      "name": "zero prior backdoor",
+      "p": "1/2",
+      "s": "1/2",
+      "t0": "1",
+      "t1": "1",
+      "r": "0"
+    }
   ]
 }

@@ -134,5 +134,48 @@ SEARCH_PARAMETERS = (
 )
 
 
+
+RESTRICTION_EVENTS = (
+    Entry("I", "The designer attempted to plant a backdoor.",
+          "In this model P(I|E) is assumed equal to P(I), not inferred from the observation."),
+    Entry("B", "The published curve contains a deliberately planted backdoor.",
+          "B implies I; this is not an accidental vulnerability."),
+    Entry("E", "The historically recovered timestamp-like generator provenance.",
+          "E is the same observation as the likelihood tab; never multiply the two updates."),
+    Entry("T", "The attacker faced a GENUINELY effective constraint on candidate selection.",
+          "Not merely that the published seed can be reconstructed with lrand48."),
+    Entry("not T", "The design was not meaningfully constrained by that method.",
+          "T and not T are the two possibilities conditional on intent."),
+)
+
+RESTRICTION_QUANTITIES = (
+    Entry("p = P(I)", "Prior probability of malicious intent.",
+          "Held invariant under E: P(I|E)=p. This is an assumption; conditionals on I are counterfactual if p=0."),
+    Entry("s = P(B|I,not T)", "Baseline probability of backdoor success if not constrained.",
+          "Success conditional on I,not T and E is assumed unchanged."),
+    Entry("t0 = P(T|I)", "Belief in a genuinely restrictive method before E."),
+    Entry("t1 = P(T|I,E)", "Belief in a genuinely restrictive method after E.",
+          "A prior t0=0 or 1 cannot change under a positive-probability E; boundary shifts are counterfactual."),
+    Entry("r", "Relative attack success: P(B|I,T) = r × s.",
+          "Constrained to 0..1, assuming restriction cannot help the attacker."),
+    Entry("P(B)", "p × s × [1 - t0 × (1-r)].",
+          "Probability before E under the effective-restriction model."),
+    Entry("P(B|E)", "p × s × [1 - t1 × (1-r)].",
+          "Probability after E under assumptions of constant intent and conditional success."),
+    Entry("Δupdate", "P(B|E) - P(B) = -p × s × (t1-t0) × (1-r).",
+          "Negative if t1>t0, p>0, s>0 and r<1. Otherwise it may be zero or positive."),
+    Entry("Break-even", "Δupdate = 0 iff p=0 or s=0 or t1=t0 or r=1.",
+          "No denominator: unlike a Bayes likelihood ratio, this update is always defined."),
+)
+
+RESTRICTION_PARAMETERS = (
+    ParameterEntry("restriction_intent", "p", "Probability of malicious intent; fixed by E."),
+    ParameterEntry("restriction_baseline_success", "s", "Conditional success without an effective constraint."),
+    ParameterEntry("restriction_before", "t0", "Belief in effective restriction before E."),
+    ParameterEntry("restriction_after", "t1", "Belief in effective restriction after E."),
+    ParameterEntry("restriction_ratio", "r", "Ratio of constrained to unconstrained attack success.",
+                   "0 impossible when constrained; 1 no difference."),
+)
+
 def all_parameter_keys() -> set[str]:
-    return {e.key for e in (*BAYES_PARAMETERS, *SEARCH_PARAMETERS)}
+    return {e.key for e in (*BAYES_PARAMETERS, *SEARCH_PARAMETERS, *RESTRICTION_PARAMETERS)}

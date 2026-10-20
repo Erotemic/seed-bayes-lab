@@ -1,6 +1,7 @@
 """Small, auditable Bayesian models for parameter-selection arguments."""
 
 from seed_bayes_lab.model import Likelihoods, Prior, Update, posterior_backdoor, update
+from seed_bayes_lab.restriction import RestrictionUpdate, restriction_update
 from seed_bayes_lab.search import (
     MethodUpdate,
     effective_search_success,
@@ -16,6 +17,8 @@ __all__ = [
     "Update",
     "posterior_backdoor",
     "update",
+    "RestrictionUpdate",
+    "restriction_update",
     "MethodUpdate",
     "effective_search_success",
     "independent_search_success",

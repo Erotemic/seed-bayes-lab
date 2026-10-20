@@ -6,7 +6,7 @@
   'use strict';
 
   const TOL = 1e-13;
-  const GROUPS = ['bayes', 'search'];
+  const GROUPS = ['bayes', 'search', 'restriction'];
   const TABS = ['bayes', 'search', 'glossary'];
   const copy = state => ({ ...state });
 
@@ -30,6 +30,23 @@
       delta: b / evidence - backdoor,
       evidence
     };
+  }
+
+  // Separate interpretation of historical evidence E, NOT multiplied into
+  // finiteBayes(). Values are uncalibrated; P(I|E)=P(I) is assumed constant.
+  function restrictionUpdate(s) {
+    const p = s.restriction_intent;
+    const baseline = s.restriction_baseline_success;
+    const t0 = s.restriction_before;
+    const t1 = s.restriction_after;
+    const r = s.restriction_ratio;
+    const factorBefore = 1 - t0 * (1 - r);
+    const factorAfter = 1 - t1 * (1 - r);
+    const before = p * baseline * factorBefore;
+    const after = p * baseline * factorAfter;
+    const delta = -(p * baseline) * (t1 - t0) * (1 - r);
+    return { before, after, delta,
+      factorBefore, factorAfter, multiplier: before > 0 ? after / before : null };
   }
 
   function independentSearch(k, available, budget) {
@@ -80,7 +97,8 @@
   }
 
   function sweep(s, spec) {
-    const evaluate = spec.group === 'bayes' ? finiteBayes : methodUpdate;
+    const evaluate = spec.group === 'bayes' ? finiteBayes :
+      spec.group === 'search' ? methodUpdate : restrictionUpdate;
     const current = evaluate(s).delta;
     let minimum = null, maximum = null;
     let left = null, right = null, leftPosterior = null, rightPosterior = null;
@@ -127,6 +145,7 @@
   // probability change is not automatically a break-even point.
   // Null means conditioning is impossible, so it must not produce a tick.
   function zeroNumerator(s, group) {
+    if (group === 'restriction') return restrictionUpdate(s).delta;
     if (group === 'bayes') {
       const honest = 1 - s.prior_intent;
       const failed = s.prior_intent * (1 - s.success_given_intent);
@@ -271,7 +290,7 @@
     icon.setAttribute('aria-hidden', 'true');
     const amount = createText('strong', 'extreme-number', numeric);
     content.append(icon, amount);
-    const afterName = group === 'bayes' ? 'P(B | E)' : 'P(B | J,T)';
+    const afterName = group === 'search' ? 'P(B | J,T)' : 'P(B | E)';
     const detail = createText('div', 'extreme-posterior', afterName + ' ' + percent(posterior));
     element.className = 'dial-extreme ' + sign;
     element.setAttribute('aria-label', edgeLabel + ' setting ' + point +
@@ -356,7 +375,9 @@
           reversibleNames.push(spec.label);
         }
       }
-      const current = direction(group === 'bayes' ? finiteBayes(values).delta : methodUpdate(values).delta);
+      const evaluate = group === 'bayes' ? finiteBayes :
+        group === 'search' ? methodUpdate : restrictionUpdate;
+      const current = direction(evaluate(values).delta);
       const summary = document.getElementById(group + '-flip-summary');
       if (current === 'unchanged') {
         const movable = specs.filter(spec => {
@@ -449,8 +470,31 @@
     return [traces,layout];
   }
 
+  function restrictionFigure(s) {
+    const xs = Array.from({length:101},(_,i)=>i/100);
+    const ys = xs.map(t1=>restrictionUpdate({...s,restriction_after:t1}).after);
+    const now = restrictionUpdate(s);
+    const traces = [
+      {x:xs,y:ys,name:'P(B | E)',type:'scatter',mode:'lines',
+       line:{color:'#285aa3',width:3}},
+      {x:[0,1],y:[now.before,now.before],name:'P(B) before E',
+       type:'scatter',mode:'lines',line:{dash:'dash',color:'#8c93a0',width:2}},
+      {x:[s.restriction_after],y:[now.after],name:'Current assumptions',
+       type:'scatter',mode:'markers',marker:{size:11,color:'#c05d33'}}
+    ];
+    const layout = {title:{text:'Effective-restriction belief sensitivity',font:{size:16}},
+      xaxis:{title:{text:'P(T | I,E) - effective restriction after evidence',standoff:10},
+        range:[0,1],tickformat:'.0%',automargin:true},
+      yaxis:{title:{text:'P(B | E) - posterior backdoor probability',standoff:8},
+        range:[0,1],tickformat:'.0%',automargin:true},
+      margin:{l:76,r:18,t:45,b:76},legend:{orientation:'h',y:-0.3},
+      paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
+    return [traces,layout];
+  }
+
   function renderSummary(values, group) {
-    const result = group === 'bayes' ? finiteBayes(values) : methodUpdate(values);
+    const result = group === 'bayes' ? finiteBayes(values) :
+      group === 'search' ? methodUpdate(values) : restrictionUpdate(values);
     const prior = document.getElementById(group + '-before');
     const after = document.getElementById(group + '-after');
     const delta = document.getElementById(group + '-delta');
@@ -461,21 +505,39 @@
     if (group === 'bayes') {
       document.getElementById('bayes-intent-after').textContent = percent(result.intentAfter);
     }
+    if (group === 'restriction') {
+      document.getElementById('restriction-multiplier').textContent =
+        result.multiplier === null ? 'undefined' : result.multiplier.toFixed(3) + '\u00d7';
+      const priorT = values.restriction_before;
+      const posteriorT = values.restriction_after;
+      const warning = values.restriction_intent === 0 ?
+        'P(T | I) conditions on zero-probability intent. The model is counterfactual here.' :
+        ((priorT === 0 && posteriorT !== 0) ||
+         (priorT === 1 && posteriorT !== 1)) ?
+        'This belief pair cannot arise from conditioning on positive-probability E: a prior of 0 or 1 cannot move. The algebra is counterfactual here.' : '';
+      const note = document.getElementById('restriction-support-note');
+      note.textContent = warning;
+      note.hidden = !warning;
+    }
   }
 
   function mount(config) {
     const state = copy(config.defaults);
     let active = 'bayes';
+    let bayesView = 'likelihood';
     let frame = false;
 
     function drawPlots() {
       frame = false;
       if (!root.Plotly) return;
-      if (active === 'bayes') {
+      if (active === 'bayes' && bayesView === 'likelihood') {
         const [line, layout] = lineFigure(state);
         const [map, mapLayout] = heatmapFigure(state);
         root.Plotly.react('bayes-line',line,layout,CHART_OPTIONS);
         root.Plotly.react('bayes-heatmap',map,mapLayout,CHART_OPTIONS);
+      } else if (active === 'bayes' && bayesView === 'restriction') {
+        const [line, layout] = restrictionFigure(state);
+        root.Plotly.react('restriction-line',line,layout,CHART_OPTIONS);
       } else if (active === 'search') {
         const [curves,layout] = searchFigure(state);
         root.Plotly.react('search-curves',curves,layout,CHART_OPTIONS);
@@ -509,6 +571,18 @@
     }
 
     renderControls(config, state, renderAll);
+    for (const view of ['likelihood', 'restriction']) {
+      const button = document.getElementById('bayes-subtab-' + view);
+      button.addEventListener('click', () => {
+        bayesView = view;
+        for (const choice of ['likelihood', 'restriction']) {
+          document.getElementById('bayes-view-' + choice).hidden = choice !== view;
+          document.getElementById('bayes-subtab-' + choice)
+            .setAttribute('aria-selected', String(choice === view));
+        }
+        renderAll();
+      });
+    }
     for (const button of document.querySelectorAll('[data-evidence-preset]')) {
       button.addEventListener('click', () => {
         Object.assign(state, config.presets[button.dataset.evidencePreset]);
@@ -537,7 +611,7 @@
   }
 
   root.SeedBayesOffline = {
-    finiteBayes, methodUpdate, publishedMethodUpdate, independentSearch, direction, formatter,
-    zeroNumerator, breakEvens, sweep, mount, lineFigure, heatmapFigure, searchFigure
+    finiteBayes, methodUpdate, publishedMethodUpdate, independentSearch, restrictionUpdate, direction, formatter,
+    zeroNumerator, breakEvens, sweep, mount, lineFigure, heatmapFigure, searchFigure, restrictionFigure
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

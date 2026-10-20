@@ -286,3 +286,39 @@ custom ticks are not supported). Standalone HTML overlays ticks directly on
 its slider. The root finder itself is numerical; Lean proves the exact break-even
 numerators and algebraic equality conditions, but not slider interpolation,
 floating-point handling, or canvas placement.
+
+## Alternative effective-restriction explanation of E
+
+This is a **separate interpretation of the same historical evidence E**, not
+an extra factor to apply after the three-world likelihood model. Let `T` mean
+that the generation method truly restricted the adversary's ability to find
+or construct a weak curve, not merely that the output matches `lrand48`.
+
+Assumptions:
+
+1. `p = P(I|E) = P(I)` (intent stays fixed).
+2. `s = P(B|I,not T,E) = P(B|I,not T)` (baseline success invariant given method).
+3. `P(B|I,T,E) = P(B|I,T) = r*s` with `0 <= r <= 1`.
+4. `t0=P(T|I)` and `t1=P(T|I,E)` represent before/after restriction beliefs.
+5. Publication selection is ignored. The backdoor event requires intent.
+
+Applying total probability conditional on intent:
+
+```text
+P(B)   = p*s*[1 - t0*(1-r)]
+P(B|E) = p*s*[1 - t1*(1-r)]
+Delta  = -p*s*(t1-t0)*(1-r)
+```
+
+`SeedBayes/Restriction.lean` proves the difference and break-even identities,
+and non-increase given `p>=0`, `s>=0`, `t0<=t1`, and `r<=1`. The probabilities
+are hypothetical; Lean does not establish the historical assumptions.
+
+**Conditioning support:** if `P(I)>0` and `P(E|I)>0`, a prior `t0=0` implies
+`t1=0` and prior `t0=1` implies `t1=1`. The UI flags combinations that violate
+this. At `P(I)=0`, `P(T|I)` is technically undefined, so conditional success
+rates should be understood as counterfactual parameters. Their algebraic
+extension remains useful for slider boundary illustrations.
+
+The likelihood and restriction views have separate priors/sliders on purpose:
+combining their deltas would double-count E without a larger joint model.

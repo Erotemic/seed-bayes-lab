@@ -10,7 +10,7 @@ import pytest
 
 from seed_bayes_lab.sensitivity import (
     SLIDER_SPECS, analyze_slider, bayes_delta, bayes_posterior,
-    search_delta, search_posterior,
+    search_delta, search_posterior, restriction_delta, restriction_posterior,
 )
 from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
@@ -27,8 +27,8 @@ def test_endpoint_deltas_equal_evidence_update_at_endpoints():
     values = dict(DEFAULT_ASSUMPTIONS)
     for key, spec in SLIDER_SPECS.items():
         scan = analyze_slider(values, key)
-        delta = bayes_delta if spec.group == 'bayes' else search_delta
-        posterior = bayes_posterior if spec.group == 'bayes' else search_posterior
+        delta = {'bayes': bayes_delta, 'search': search_delta, 'restriction': restriction_delta}[spec.group]
+        posterior = {'bayes': bayes_posterior, 'search': search_posterior, 'restriction': restriction_posterior}[spec.group]
         for extreme, reported_delta, reported_posterior in (
             (spec.minimum, scan.left_delta, scan.left_posterior),
             (spec.maximum, scan.right_delta, scan.right_posterior),

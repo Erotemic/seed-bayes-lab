@@ -13,6 +13,10 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
 
 - `src/seed_bayes_lab/model.py`: exact three-world Bayes calculations for
   *honest*, *attempted-but-failed*, and *successful deliberate backdoor*.
+- `src/seed_bayes_lab/restriction.py`: **alternative effective-restriction
+  model**, formalizing the assumption that E makes a genuinely restrictive
+  procedure more plausible while intent and conditional success stay fixed.
+  Its update must not be multiplied into the three-world likelihood model.
 - `src/seed_bayes_lab/search.py`: illustrative independent-candidate search,
   limits from candidate freedom and computing budget, and publication selection.
 - `src/seed_bayes_lab/plots.py`: reusable Plotly interactive curves, a directional
@@ -28,15 +32,17 @@ this repository estimates the actual probability that NIST P-256 is backdoored.
   full offline HTML application, with parity tests against Python.
 - `src/seed_bayes_lab/evidence.py`: shared observed-evidence definition.
 - `src/seed_bayes_lab/glossary.py`: shared finite-world events, search/publication
-  events, all thirteen input meanings, and display notation for both interfaces.
+  events, all eighteen input meanings, and display notation for both interfaces.
 - `src/seed_bayes_lab/ui_state.py`: centralized **neutral evidence** defaults, illustrative
   evidence-likelihood presets, and reset behavior.
 - `examples/interactive_demo.html`: generated, self-contained offline explorer
-  with all thirteen sliders, icon-led endpoint effects, purple break-even
+  with all eighteen sliders, icon-led endpoint effects, purple break-even
   ticks/segments, a detailed notation glossary, live charts, reset, and
   direction-reversal hints.
 - `SeedBayes/Finite.lean`: finite Bayesian identities, odds form, factorization,
   likelihood-ratio criterion for a decreasing posterior, and 100%-intent case.
+- `SeedBayes/Restriction.lean`: exact effective-restriction update, sign theorem,
+  strict decrease, and complete break-even cases under explicit hypotheses.
 - `SeedBayes/Selection.lean`: when observing the more constrained method must
   decrease (or leave unchanged) the conditional success probability.
 - `tests/`: numerical identities, boundary cases, sensitivity and plots.
@@ -63,15 +69,18 @@ likelihoods; they do not reset intent, success, or search settings. The
 baseline. A compact evidence
 summary appears above the tabs; expand it for the complete observation,
 limitations, and historical source links.
-Use the **Evidence / Bayes** tab to
-change the three likelihoods and priors, and **Search & publication** to vary
+Within **Evidence / Bayes**, switch between *Likelihood assumptions* and
+*Effective restriction*. These are **alternative explanations of the same E**,
+not successive updates. The latter holds P(I|E) fixed and adjusts the prior and
+posterior belief that the attacker faced a genuinely restrictive procedure.
+**Search & publication** independently explores
 seed freedom, vulnerability rarity, search budget, chance of knowing an attack,
 and policy for publishing unsuccessful attempts.
 
 For the **complete shareable application**, open
 `examples/interactive_demo.html` in a browser (no server, internet, Python,
 Streamlit, or CDN needed). It now provides every assumption slider, live Bayes
-and search plots, visual endpoint badges, a full notation glossary tab,
+search and effective-restriction plots, visual endpoint badges, a full notation glossary tab,
 and a global reset.
 The HTML is several megabytes because Plotly is embedded. To regenerate it:
 
@@ -79,7 +88,7 @@ The HTML is several megabytes because Plotly is embedded. To regenerate it:
 uv run seed-bayes-demo examples/interactive_demo.html
 ```
 
-The global reset restores all thirteen controls to the neutral baseline in either interface. Both
+The global reset restores all eighteen controls to the neutral baseline in either interface. Both
 interfaces describe the historical observation E, distinguish it from the
 stronger method-observation T, and report before/after probabilities using
 `P(B)` and `P(B | E)` (or `P(B | published)` and
@@ -140,10 +149,42 @@ python -m pytest
 python -m streamlit run src/seed_bayes_lab/app.py
 ```
 
+## Alternative effective-restriction explanation of E
+
+Inside **Evidence / Bayes**, the new **Effective restriction** subview asks
+whether the discovery increases belief that the designers really had fewer
+opportunities to select a vulnerable curve. The model assumes:
+
+- `p = P(I) = P(I|E)`: evidence does **not** update malicious intent;
+- `s = P(B|I,not T)`: baseline success with no effective restriction;
+- `r`: conditional success multiplier given restriction, between 0 and 1;
+- `t0 = P(T|I)` and `t1 = P(T|I,E)`: beliefs before and after E.
+
+The exact signed difference is:
+
+```text
+P(B|E) - P(B) = -p * s * (t1 - t0) * (1-r)
+```
+
+A positive change in restriction belief (`t1 > t0`) implies a non-increasing
+backdoor probability **within this model**, if restricted success is no greater
+than unrestricted success. The default `t0=t1=0.5` is neutral. By design, the illustrative starting
+values `p=0.5`, `s=0.4`, and `r=0.5` yield the same 15% prior P(B) as
+the separate likelihood view; this is not a fitted historical constraint. The posterior/
+prior multiplier is undefined for a zero prior. At `t0=0` or `t0=1`, moving
+the posterior off that boundary is incompatible with conditioning on a
+positive-probability event; the UI warns when such inputs are selected.
+
+This subview does not establish that the historical seed method genuinely
+constrained malicious selection, that evidence E changes belief in restriction,
+or that intent is unaffected. Its inputs are explicit assumptions, not
+inferences from the reconstruction. In particular, do **not** multiply its
+update by the original likelihood tab's update: both interpret the same E.
+
 ## Lean formalization and code conformance
 
 The Lean source now covers the complete finite Bayesian update, the exact
-break-even numerator, both signs of the update, the publication-conditioned
+break-even numerator, both signs of the update, effective-restriction algebra, the publication-conditioned
 method mixture, and independent-trial search probability with natural trial
 counts. This intentionally stops short of a formal cryptographic attack or a
 floating-point JavaScript runtime.
@@ -166,12 +207,12 @@ The ordinary `uv run pytest` command works without a Lean installation.
 
 The core conformance bridge consists of:
 
-- `tests/formal_cases.json`: 24 exact rational model scenarios.
+- `tests/formal_cases.json`: 33 exact rational model scenarios.
 - `scripts/generate_formal_fixtures.py`: generates `SeedBayes/Fixtures.lean`
   with exact rational expected results and `norm_num` proofs.
 - `tests/test_formal_conformance.py`: independently exercises the production
   Python and offline JavaScript calculations against those same answers.
-- `SeedBayes/Calculations.lean`, `Publication.lean`, `Search.lean`: symbolic
+- `SeedBayes/Calculations.lean`, `Publication.lean`, `Search.lean`, `Restriction.lean`: symbolic
   results valid for whole families of probabilities, not just examples.
 
 You can regenerate the proofs with

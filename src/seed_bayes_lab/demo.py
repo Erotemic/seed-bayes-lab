@@ -14,10 +14,11 @@ from seed_bayes_lab.evidence import (
     EVIDENCE_TITLE, EVIDENCE_SHORT, EVIDENCE_OBSERVATION, EVIDENCE_LIMITS,
     EVIDENCE_LIKELIHOOD_NOTE, METHOD_OBSERVATION, SOURCES,
 )
-from seed_bayes_lab.sensitivity import BAYES_SLIDERS, SEARCH_SLIDERS, SLIDER_SPECS
+from seed_bayes_lab.sensitivity import BAYES_SLIDERS, SEARCH_SLIDERS, RESTRICTION_SLIDERS, SLIDER_SPECS
 from seed_bayes_lab.glossary import (
     BAYES_EVENTS, BAYES_QUANTITIES, SEARCH_EVENTS, SEARCH_QUANTITIES,
     BAYES_PARAMETERS, SEARCH_PARAMETERS,
+    RESTRICTION_EVENTS, RESTRICTION_QUANTITIES, RESTRICTION_PARAMETERS,
 )
 from seed_bayes_lab.ui_state import DEFAULT_ASSUMPTIONS, EVIDENCE_PRESETS
 
@@ -62,7 +63,14 @@ def _glossary_html() -> str:
         + _glossary_table('Events and worlds', BAYES_EVENTS)
         + _glossary_table('Probability notation and updates', BAYES_QUANTITIES)
         + _glossary_table('Five input dials', BAYES_PARAMETERS, parameters=True)
-        + '<h2 class="glossary-group-title">2. Search and publication model</h2>'
+        + '<h2 class="glossary-group-title">2. Effective restriction · alternative model of E</h2>'
+        '<p class="intro">T means an effective restriction, NOT merely a timestamp-like seed. '
+        'P(I|E)=P(I) and conditional success under T and not T are assumed invariant. '
+        'This is an alternative to the likelihood model, not an additional multiplier.</p>'
+        + _glossary_table('Events', RESTRICTION_EVENTS)
+        + _glossary_table('Conditional probabilities and exact update', RESTRICTION_QUANTITIES)
+        + _glossary_table('Five effective-restriction dials', RESTRICTION_PARAMETERS, parameters=True)
+        + '<h2 class="glossary-group-title">3. Search and publication model</h2>'
         '<p class="intro">Malicious intent is certain in this toy model. The '
         'design process chooses T or U before attempting to plant a backdoor; '
         'J describes whether the attempt was published.</p>'
@@ -93,7 +101,7 @@ def _glossary_html() -> str:
 
 
 def render_html(destination: str | Path) -> Path:
-    """Export a shareable offline HTML with 13 live dials and a glossary tab.
+    """Export a shareable offline HTML with 18 live dials and a glossary tab.
 
     Bayes and search formulas in offline.js mirror the tested Python model;
     a parity test executes them using Node. Plotly is bundled inline.
@@ -106,7 +114,7 @@ def render_html(destination: str | Path) -> Path:
         "specs": [
             {"key": spec.key, "label": spec.label, "min": spec.minimum,
              "max": spec.maximum, "step": spec.step, "group": spec.group}
-            for spec in (*BAYES_SLIDERS, *SEARCH_SLIDERS)
+            for spec in (*BAYES_SLIDERS, *SEARCH_SLIDERS, *RESTRICTION_SLIDERS)
         ],
     }
     js = files("seed_bayes_lab").joinpath("offline.js").read_text(encoding="utf-8")
@@ -139,6 +147,9 @@ button.primary:hover{background:#184575}.helper{color:#65758a;font-size:.85rem}
 .tabbar{display:flex;gap:8px;border-bottom:1px solid #cfd7e2;margin:8px 0 18px}
 .tabbar button{border:0;background:transparent;color:#647187;font-weight:600;padding:12px 18px;border-bottom:3px solid transparent}
 .tabbar button[aria-selected=true]{color:#194e83;border-bottom-color:#2364a4}
+.subtabbar{display:flex;gap:6px;margin:0 0 18px;flex-wrap:wrap}
+.subtabbar button{border:1px solid #c8d4e3;background:#fff;color:#425873;padding:8px 13px;border-radius:7px;font-size:.86rem;font-weight:650}
+.subtabbar button[aria-selected=true]{border-color:#225b96;background:#eaf2fb;color:#174d86}
 [hidden]{display:none!important}
 .intro{font-size:.9rem;color:#59697c;max-width:1120px;margin:0 0 16px}
 .workspace{display:grid;grid-template-columns:minmax(325px,430px) minmax(0,1fr);gap:20px;align-items:start}
@@ -217,14 +228,20 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 <p><strong>Meaning of evidence likelihoods:</strong> %%EVIDENCE_NOTE%%</p>
 <p><strong>Sources:</strong> %%EVIDENCE_SOURCES%%</p></details></section>
 <div class="actions"><button type="button" id="reset-all" class="primary">Reset all assumptions</button>
-<span class="helper">Resets all 13 sliders, summary values, and charts.</span></div></header>
+<span class="helper">Resets all 18 sliders, summary values, and charts.</span></div></header>
 <div class="tabbar" role="tablist" aria-label="Probability models">
 <button type="button" id="tab-bayes" role="tab" aria-controls="panel-bayes" aria-selected="true">Evidence / Bayes</button>
 <button type="button" id="tab-search" role="tab" aria-controls="panel-search" aria-selected="false">Search &amp; publication</button>
 <button type="button" id="tab-glossary" role="tab" aria-controls="panel-glossary" aria-selected="false">Notation glossary</button>
 </div>
 <section id="panel-bayes" role="tabpanel" aria-labelledby="tab-bayes">
-<p class="intro">Three worlds: no malicious attempt, attempted but failed, successful planted backdoor. Endpoint arrows show <strong>Δ = P(B | E) − P(B)</strong> evaluated at MIN/MAX of that dial, holding other dials fixed. Moving the dial does <strong>not</strong> change its own endpoint badges, but moving other dials can. Values are in percentage points. Purple ticks mark isolated break-even settings (Δ = 0); a purple bar marks an interval of equality. Ticks depend on the other dials, not the dial itself.</p>
+<p class="intro">Two alternative explanations of the same evidence E: change the likelihoods under the three historical outcomes, or change belief that an attacker faced an effective restriction. <strong>Do not multiply their updates.</strong> Both models have neutral default evidence.</p>
+<div class="subtabbar" role="tablist" aria-label="Alternative explanations of E">
+<button type="button" id="bayes-subtab-likelihood" aria-selected="true" role="tab" aria-controls="bayes-view-likelihood">Likelihood assumptions</button>
+<button type="button" id="bayes-subtab-restriction" aria-selected="false" role="tab" aria-controls="bayes-view-restriction">Effective restriction</button>
+</div>
+<div id="bayes-view-likelihood" role="tabpanel" aria-labelledby="bayes-subtab-likelihood">
+<p class="intro">Three worlds: no malicious attempt, attempted but failed, and successful planted backdoor. Endpoint arrows show the evidence update Δ = P(B|E) − P(B) at each fixed slider endpoint; purple ticks or intervals show break-even. Neither depends on that slider's current position.</p>
 <div class="workspace">
 <div class="controls"><h2>Bayesian assumptions</h2>
 <div class="preset-box" role="group" aria-label="Illustrative evidence likelihood scenarios">
@@ -244,7 +261,23 @@ footer{font-size:.85rem;color:#65758a;margin-top:30px}
 </div><p class="flip-summary" id="bayes-flip-summary"></p></div>
 <div class="chart-panel"><div id="bayes-line" class="chart"></div></div>
 <div class="chart-panel"><div id="bayes-heatmap" class="chart"></div></div>
-</div></div></section>
+</div></div></div>
+<div id="bayes-view-restriction" role="tabpanel" aria-labelledby="bayes-subtab-restriction" hidden>
+<p class="intro">Here T means the designer was <strong>genuinely constrained</strong> in searching for a planted weakness, not merely that the seed is reconstructible. Assume intent stays fixed, P(I|E)=P(I), and E affects success only by changing belief in T from t0=P(T|I) to t1=P(T|I,E). If constrained, relative success is r from 0 (impossible) to 1 (no effect). <strong>This model is an alternative to the likelihood model; do not combine their updates.</strong></p>
+<div class="workspace">
+<div class="controls"><h2>Effective-restriction assumptions</h2>
+<p class="detail">Starts neutral: t0=t1=0.50. No historical probability is estimated by these dials.</p>
+<div id="restriction-controls"></div></div>
+<div class="view"><div class="summary"><div class="metrics">
+<div class="metric"><span class="metric-label">P(B) · before E</span><span class="metric-value" id="restriction-before">—</span></div>
+<div class="metric"><span class="metric-label">P(B | E) · after E</span><span class="metric-value" id="restriction-after">—</span></div>
+<div class="metric"><span class="metric-label">Δ (percentage points)</span><span class="metric-value" id="restriction-delta">—</span></div>
+<div class="metric"><span class="metric-label">Posterior / prior</span><span class="metric-value" id="restriction-multiplier">—</span></div>
+</div><p class="flip-summary" id="restriction-flip-summary"></p></div>
+<div class="chart-panel"><div id="restriction-line" class="chart"></div></div>
+<div id="restriction-support-note" class="caveat" role="status" hidden></div>
+<div class="caveat">Identity: Δ = −p × s × (t1−t0) × (1−r). The restriction model holds malicious intent and conditional success rates fixed under E. Publication selection is not represented. The likelihood view's update is not added here.</div>
+</div></div></div></section>
 <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden>
 <p class="intro">%%METHOD_OBSERVATION%% In this separate model intent is fixed at 100%; the observation is <strong>T among published curves</strong>. Endpoint arrows show Δ = P(B | published,T) − P(B | published) at that dial's MIN/MAX. Purple ticks mark Δ = 0, and purple bars mark equality intervals, holding the other dials fixed. This is not evidence E.</p>
 <div class="workspace">

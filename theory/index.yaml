@@ -111,3 +111,30 @@ entries:
         type: publicationMass st rho != 0
       - id: hJ
         type: mixturePublicationMass alpha st su rho != 0
+
+  - id: SeedBayes.Restriction.Delta
+    kind: theorem
+    declaration: SeedBayes.restriction_delta_formula
+    source_path: SeedBayes/Restriction.lean
+    statement: Exact change in P(B) when E changes only P(T|I), holding intent and conditional attack success fixed.
+
+  - id: SeedBayes.Restriction.NonIncrease
+    kind: theorem
+    declaration: SeedBayes.restriction_nonincrease
+    source_path: SeedBayes/Restriction.lean
+    statement: When effective restriction becomes more likely and cannot improve attack success, the posterior does not increase.
+    premises:
+      - id: hp
+        type: 0 <= p
+      - id: hs
+        type: 0 <= s
+      - id: ht
+        type: t0 <= t1
+      - id: hr
+        type: r <= 1
+
+  - id: SeedBayes.Restriction.BreakEven
+    kind: theorem
+    declaration: SeedBayes.restriction_break_even_iff
+    source_path: SeedBayes/Restriction.lean
+    statement: Delta is zero iff intent is zero, baseline success is zero, restriction belief does not change, or restriction has no effect.

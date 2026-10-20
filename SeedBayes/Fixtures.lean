@@ -1,6 +1,7 @@
 import SeedBayes.Calculations
 import SeedBayes.Publication
 import SeedBayes.Search
+import SeedBayes.Restriction
 
 /-!
 # Exact cross-language conformance cases
@@ -262,5 +263,185 @@ example : independentSuccess (1 / (2 ^ 5) : ℝ) (2 ^ (min 4 4)) = (481502697867
 -- single rare draw
 example : independentSuccess (1 / (2 ^ 6) : ℝ) (2 ^ (min 0 0)) = (1 / 64 : ℝ) := by
   norm_num [independentSuccess]
+
+-- neutral restriction belief
+example : restrictionFactor (1 / 2 : ℝ) (1 / 2 : ℝ) = (3 / 4 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (1 / 2 : ℝ) (1 / 2 : ℝ) = (3 / 4 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (9 / 80 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (9 / 80 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- more confident restriction
+example : restrictionFactor (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 10 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (4 / 5 : ℝ) (1 / 2 : ℝ) = (3 / 5 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (27 / 200 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 100 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (-9 / 200 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (-9 / 200 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- less confident restriction
+example : restrictionFactor (4 / 5 : ℝ) (1 / 2 : ℝ) = (3 / 5 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 10 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 100 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 / 2 : ℝ) (3 / 10 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (27 / 200 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 200 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 / 2 : ℝ) (3 / 10 : ℝ) (4 / 5 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 200 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- certain malicious intent
+example : restrictionFactor (1 / 4 : ℝ) (1 / 5 : ℝ) = (4 / 5 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (3 / 4 : ℝ) (1 / 5 : ℝ) = (2 / 5 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 : ℝ) (2 / 5 : ℝ) (1 / 4 : ℝ) (1 / 5 : ℝ) = (8 / 25 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 : ℝ) (2 / 5 : ℝ) (3 / 4 : ℝ) (1 / 5 : ℝ) = (4 / 25 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 : ℝ) (2 / 5 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 5 : ℝ) = (-4 / 25 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 : ℝ) (2 / 5 : ℝ) (1 / 4 : ℝ) (3 / 4 : ℝ) (1 / 5 : ℝ) = (-4 / 25 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- no malicious intent
+example : restrictionFactor (1 / 5 : ℝ) (1 / 10 : ℝ) = (41 / 50 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (4 / 5 : ℝ) (1 / 10 : ℝ) = (7 / 25 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (0 : ℝ) (1 / 2 : ℝ) (4 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (0 : ℝ) (1 / 2 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 10 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- restriction no effect
+example : restrictionFactor (0 : ℝ) (1 : ℝ) = (1 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (1 : ℝ) (1 : ℝ) = (1 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (1 : ℝ) = (1 / 4 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (1 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 / 2 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (1 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- restriction rules out success
+example : restrictionFactor (0 : ℝ) (0 : ℝ) = (1 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (3 / 4 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (0 : ℝ) = (3 / 8 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (3 / 4 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (3 / 4 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (0 : ℝ) = (-3 / 8 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (3 / 4 : ℝ) (1 / 2 : ℝ) (0 : ℝ) (1 : ℝ) (0 : ℝ) = (-3 / 8 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- no baseline success
+example : restrictionFactor (1 / 5 : ℝ) (1 / 2 : ℝ) = (9 / 10 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (4 / 5 : ℝ) (1 / 2 : ℝ) = (3 / 5 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 / 2 : ℝ) (0 : ℝ) (1 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 / 2 : ℝ) (0 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 / 2 : ℝ) (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 / 2 : ℝ) (0 : ℝ) (1 / 5 : ℝ) (4 / 5 : ℝ) (1 / 2 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+
+-- zero prior backdoor
+example : restrictionFactor (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionFactor (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionBefore (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionAfter (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDelta (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
+example : restrictionDeltaPolynomial (1 / 2 : ℝ) (1 / 2 : ℝ) (1 : ℝ) (1 : ℝ) (0 : ℝ) = (0 : ℝ) := by
+  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,
+    restrictionDelta, restrictionDeltaPolynomial]
 
 end SeedBayes

@@ -7,4 +7,5 @@ theory:
     - ../src/seed_bayes_lab/model.py
     - ../src/seed_bayes_lab/search.py
     - ../src/seed_bayes_lab/sensitivity.py
+    - ../src/seed_bayes_lab/restriction.py
     - ../tests/test_formal_conformance.py

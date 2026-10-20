@@ -16,7 +16,7 @@ def test_reset_restores_every_control_without_erasing_other_state():
     state = {"custom_state": "preserve", "prior_intent": 0.75}
     initialize_assumptions(state)
     assert state["prior_intent"] == 0.75
-    assert len(DEFAULT_ASSUMPTIONS) == 13
+    assert len(DEFAULT_ASSUMPTIONS) == 18
     for key in DEFAULT_ASSUMPTIONS:
         state[key] = 0
     reset_assumptions(state)

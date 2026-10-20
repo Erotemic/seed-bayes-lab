@@ -27,7 +27,7 @@ def rat(x):
 
 def compute_cases():
     payload = json.loads(CASES.read_text())
-    result = {'bayes': [], 'publication': [], 'search': []}
+    result = {'bayes': [], 'publication': [], 'search': [], 'restriction': []}
     for spec in payload['bayes']:
         i, s, lh, lf, lb = (f(spec[x]) for x in ('intent', 'success', 'lh', 'lf', 'lb'))
         h, failure, b = 1-i, i*(1-s), i*s
@@ -56,6 +56,18 @@ def compute_cases():
         q = Q(1, 2**k)
         n = 2**min(freedom, budget)
         result['search'].append(dict(spec, expected={'success': str(1-(1-q)**n)}))
+    for spec in payload['restriction']:
+        p, ss, t0, t1, r = (f(spec[x]) for x in ('p', 's', 't0', 't1', 'r'))
+        before_factor = 1-t0*(1-r)
+        after_factor = 1-t1*(1-r)
+        before = p*ss*before_factor
+        after = p*ss*after_factor
+        result['restriction'].append(dict(spec, expected={
+            'factor_before': str(before_factor), 'factor_after': str(after_factor),
+            'before': str(before), 'after': str(after),
+            'delta': str(-p*ss*(t1-t0)*(1-r)),
+            'multiplier': str(after/before) if before else None,
+        }))
     return result
 
 
@@ -65,6 +77,7 @@ def render():
         'import SeedBayes.Calculations',
         'import SeedBayes.Publication',
         'import SeedBayes.Search',
+        'import SeedBayes.Restriction',
         '',
         '/-!',
         '# Exact cross-language conformance cases',
@@ -119,6 +132,22 @@ def render():
         lines.append(f'-- {c["name"]}')
         lines.append(f'example : independentSuccess (1 / (2 ^ {k}) : ℝ) (2 ^ (min {freedom} {budget})) = {rat(c["expected"]["success"])} := by')
         lines.append('  norm_num [independentSuccess]')
+        lines.append('')
+    for c in table['restriction']:
+        p, ss, t0, t1, r = (rat(c[x]) for x in ('p', 's', 't0', 't1', 'r'))
+        values = c['expected']
+        lines.append(f'-- {c["name"]}')
+        for name, args, expected in [
+            ('restrictionFactor', f'{t0} {r}', 'factor_before'),
+            ('restrictionFactor', f'{t1} {r}', 'factor_after'),
+            ('restrictionBefore', f'{p} {ss} {t0} {r}', 'before'),
+            ('restrictionAfter', f'{p} {ss} {t1} {r}', 'after'),
+            ('restrictionDelta', f'{p} {ss} {t0} {t1} {r}', 'delta'),
+            ('restrictionDeltaPolynomial', f'{p} {ss} {t0} {t1} {r}', 'delta'),
+        ]:
+            lines.append(f'example : {name} {args} = {rat(values[expected])} := by')
+            lines.append('  norm_num [restrictionFactor, restrictionBefore, restrictionAfter,')
+            lines.append('    restrictionDelta, restrictionDeltaPolynomial]')
         lines.append('')
     lines.extend(['end SeedBayes', ''])
     return '\n'.join(lines)

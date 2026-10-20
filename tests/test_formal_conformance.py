@@ -20,6 +20,7 @@ import pytest
 import magnet_theory as theory
 
 from seed_bayes_lab.model import Likelihoods, Prior, update
+from seed_bayes_lab.restriction import restriction_update
 from seed_bayes_lab.search import independent_search_success, method_observation_update
 from seed_bayes_lab.sensitivity import _zero_numerator
 
@@ -109,6 +110,30 @@ def test_lean_proved_independent_search_cases_against_python():
         _close(actual, c['expected']['success'])
 
 
+@theory.tests(
+    "SeedBayes.Restriction.Delta",
+    note="Exact rational Lean fixtures compared with production restriction model",
+)
+def test_lean_proved_effective_restriction_cases_against_python():
+    for c in _cases()['restriction']:
+        p, s, t0, t1, r = (float(Fraction(c[x])) for x in
+                             ('p', 's', 't0', 't1', 'r'))
+        result = restriction_update(p, s, t0, t1, r)
+        expected = c['expected']
+        for actual, field in (
+            (result.factor_before, 'factor_before'),
+            (result.factor_after, 'factor_after'),
+            (result.before, 'before'),
+            (result.after, 'after'),
+            (result.delta, 'delta'),
+        ):
+            _close(actual, expected[field])
+        if expected['multiplier'] is None:
+            assert result.multiplier is None
+        else:
+            _close(result.multiplier, expected['multiplier'])
+
+
 @pytest.mark.skipif(shutil.which('node') is None, reason='Node is optional')
 @theory.tests(
     "SeedBayes.Bayes.Posterior",
@@ -121,6 +146,10 @@ def test_lean_proved_independent_search_cases_against_python():
 @theory.tests(
     "SeedBayes.Search.Independent",
     note="Offline search kernel compared against exact Lean fixtures",
+)
+@theory.tests(
+    "SeedBayes.Restriction.Delta",
+    note="Offline restriction kernel compared against exact Lean fixtures",
 )
 def test_lean_proved_cases_against_offline_javascript():
     cases = _cases()
@@ -142,7 +171,12 @@ def test_lean_proved_cases_against_offline_javascript():
         api.publishedMethodUpdate(num(c.alpha), num(c.st), num(c.su), num(c.rho)));
       const search = all.search.map(c =>
         api.independentSearch(c.k, c.freedom, c.budget));
-      console.log(JSON.stringify({bayes, publication, search}));
+      const restriction = all.restriction.map(c => api.restrictionUpdate({
+        restriction_intent:num(c.p), restriction_baseline_success:num(c.s),
+        restriction_before:num(c.t0), restriction_after:num(c.t1),
+        restriction_ratio:num(c.r)
+      }));
+      console.log(JSON.stringify({bayes, publication, search, restriction}));
     '''
     payload = {k: [{kk: vv for kk, vv in c.items() if kk != 'expected'}
                     for c in cases[k]] for k in cases}
@@ -163,3 +197,14 @@ def test_lean_proved_cases_against_offline_javascript():
             _close(result[field], c['expected'][field])
     for c, result in zip(cases['search'], output['search'], strict=True):
         _close(result, c['expected']['success'])
+
+    for c, result in zip(cases['restriction'], output['restriction'], strict=True):
+        for field, key in (
+            ('factor_before', 'factorBefore'), ('factor_after', 'factorAfter'),
+            ('before', 'before'), ('after', 'after'), ('delta', 'delta'),
+        ):
+            _close(result[key], c['expected'][field])
+        if c['expected']['multiplier'] is None:
+            assert result['multiplier'] is None
+        else:
+            _close(result['multiplier'], c['expected']['multiplier'])
